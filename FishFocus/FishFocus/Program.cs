@@ -2,6 +2,13 @@ using FishFocus.Client.Pages;
 using FishFocus.Components;
 using MudBlazor.Services;
 
+using FishFocus.Services;
+using FishFocus.Interfaces;
+
+builder.Services.AddScoped<FishingService>();
+
+builder.Services.AddScoped<IFishRepository, FakeFishRepository>();
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMudServices();
 builder.Services.AddHttpClient();
