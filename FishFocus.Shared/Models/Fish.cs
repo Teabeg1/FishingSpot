@@ -2,7 +2,8 @@
 
 public class Fish
 {
-    public string Name { get; set; } = "Окунь";
+    public string Name { get; set; } = string.Empty;
     public int Rarity { get; set; } // 1 - обычная, 2 - редкая и т.д.
-    public string ImageUrl { get; set; } = "fish_default.png";
+    public int Points { get; set; }
+    public string ImageUrl { get; set; } = string.Empty;
 }
