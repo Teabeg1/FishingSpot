@@ -1,0 +1,61 @@
+﻿
+@using System.Threading
+@implements IDisposable
+<PageTitle>Рыбалка для продуктивности</PageTitle>
+
+<div style="display: flex; height: 100vh;">
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #a2d2ff;">
+        <h1>Таймер рыбалки</h1>
+        <div style="font-size: 4rem; font-weight: bold;">@timeDisplay</div>
+        <button @onclick="StartTimer" style="padding: 10px 20px; font-size: 1.5rem;">Забросить удочку</button>
+    </div>
+
+    <div style="width: 300px; background: #f0f0f0; padding: 20px; border-left: 1px solid #ccc;">
+        <h3>Настройки окружения</h3>
+        <p>Здесь будут ваши ползунки и лоу-фай радио</p>
+    </div>
+</div>
+
+@code {
+    private int secondsLeft = 1800;
+    private string timeDisplay => $"{(secondsLeft / 60):D2}:{(secondsLeft % 60):D2}";
+    private bool isRunning = false;
+    private PeriodicTimer? timer;
+    private CancellationTokenSource cts = new();
+
+    private async Task StartTimer()
+    {
+        if (isRunning) return;
+        
+        isRunning = true;
+        timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cts.Token) && secondsLeft > 0)
+            {
+                secondsLeft--;
+                StateHasChanged();
+            }
+
+            if (secondsLeft == 0)
+            {
+                await FinishSession();
+            }
+        }
+        catch (OperationCanceledException) { /* Таймер остановлен */ }
+    }
+
+    private async Task FinishSession()
+    {
+        isRunning = false;
+        timer?.Dispose();
+        Console.WriteLine("Время вышло! Рыба поймана.");
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        timer?.Dispose();
+    }
+}

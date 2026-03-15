@@ -1,0 +1,141 @@
+﻿@page "/"
+@rendermode InteractiveWebAssembly
+@using FishFocus.Shared.Models
+@using System.Threading
+@implements IDisposable
+@inject HttpClient Http
+
+<PageTitle>ФишФокус — Таймер Рыбалки</PageTitle>
+
+<div class="main-container @(isNightMode ? "night-theme" : "day-theme")">
+    
+    <div class="lake-area">
+        <MudText Typo="Typo.h1" Style="font-size: 8rem; font-weight: bold;">@timeDisplay</MudText>
+        
+        @if (!isRunning)
+        {
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       Size="Size.Large" 
+                       OnClick="StartTimer"
+                       Style="font-size: 1.5rem; padding: 15px 40px;">
+                Забросить удочку
+            </MudButton>
+        }
+        else
+        {
+            <MudButton Variant="Variant.Outlined" 
+                       Color="Color.Error" 
+                       OnClick="StopTimer">
+                Прервать рыбалку
+            </MudButton>
+        }
+
+        @if (caughtFish != null)
+        {
+            <div class="catch-notification">
+                <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="mt-4">
+                    Вы поймали: @caughtFish.Name!
+                </MudAlert>
+            </div>
+        }
+    </div>
+
+    <div class="settings-panel">
+        <MudText Typo="Typo.h6" Class="mb-4">Настройки</MudText>
+        
+        <MudSwitch @bind-Value="isNightMode" Label="Ночной режим" Color="Color.Secondary" />
+        
+        <MudDivider Class="my-4"/>
+        
+        <MudText Typo="Typo.body2">Громкость лоу-фай</MudText>
+        <MudSlider @bind-Value="lofiVolume" Min="0" Max="100" Color="Color.Info" />
+        
+        <MudCheckBox @bind-Value="playRain" Label="Звуки дождя" Color="Color.Primary" />
+    </div>
+</div>
+
+@code {
+    // Состояние интерфейса
+    private bool isNightMode;
+    private int lofiVolume = 50;
+    private bool playRain;
+    
+    // Логика таймера
+    private int secondsLeft = 1800; // 30 минут
+    private bool isRunning = false;
+    private PeriodicTimer? timer;
+    private CancellationTokenSource cts = new();
+    
+    private string timeDisplay => $"{(secondsLeft / 60):D2}:{(secondsLeft % 60):D2}";
+    
+    private Fish? caughtFish;
+
+    private async Task StartTimer()
+    {
+        if (isRunning) return;
+        
+        caughtFish = null; // Сбрасываем прошлый улов
+        isRunning = true;
+        cts = new CancellationTokenSource();
+        timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cts.Token) && secondsLeft > 0)
+            {
+                secondsLeft--;
+                StateHasChanged();
+            }
+
+            if (secondsLeft == 0)
+            {
+                await FinishSession();
+            }
+        }
+        catch (OperationCanceledException) { /* Таймер остановлен вручную */ }
+    }
+
+    private void StopTimer()
+    {
+        isRunning = false;
+        cts.Cancel();
+        timer?.Dispose();
+    }
+
+    private async Task FinishSession()
+    {
+        isRunning = false;
+        timer?.Dispose();
+
+        try 
+        {
+            var response = await Http.GetFromJsonAsync<Fish>($"api/fishery/catch?minutes=30");
+            if (response != null)
+            {
+                caughtFish = response;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка связи с сервером: {ex.Message}");
+            caughtFish = new Fish { Name = " (Бэкенд не ответил)" };
+        }
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        timer?.Dispose();
+    }
+}
+
+<style>
+    .main-container { display: flex; height: 100vh; transition: background-color 1s ease; overflow: hidden; }
+    .day-theme { background-color: #a2d2ff; color: #2c3e50; }
+    .night-theme { background-color: #1a1a2e; color: #ecf0f1; }
+    .lake-area { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .settings-panel { width: 300px; padding: 25px; border-left: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
+    .catch-notification { position: absolute; bottom: 50px; animation: bounce 1s infinite; }
+    @@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+</style>
