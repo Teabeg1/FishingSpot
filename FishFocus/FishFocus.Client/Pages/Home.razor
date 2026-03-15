@@ -111,7 +111,7 @@
         try 
         {
             var response = await Http.GetFromJsonAsync<Fish>($"api/fishery/catch?minutes=30");
-            if (response != null)
+            if (response != null) 
             {
                 caughtFish = response;
             }
