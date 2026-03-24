@@ -4,17 +4,17 @@ using MudBlazor.Services;
 
 using FishFocus.Services;
 using FishFocus.Interfaces;
+using FishFocus.Repositories;
 
-builder.Services.AddScoped<FishingService>();
-
-builder.Services.AddScoped<IFishRepository, FakeFishRepository>();
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMudServices();
 builder.Services.AddHttpClient();
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
+builder.Services.AddScoped<FishingService>();
 
+builder.Services.AddScoped<IFishRepository, FakeFishRepository>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

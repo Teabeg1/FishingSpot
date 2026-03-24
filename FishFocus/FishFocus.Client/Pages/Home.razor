@@ -2,31 +2,54 @@
 @rendermode InteractiveWebAssembly
 @using FishFocus.Shared.Models
 @using System.Threading
+@using MudBlazor
 @implements IDisposable
 @inject HttpClient Http
+@inject ISnackbar Snackbar
 
-<PageTitle>ФишФокус — Таймер Рыбалки</PageTitle>
+<PageTitle>Рыбалка</PageTitle>
 
 <div class="main-container @(isNightMode ? "night-theme" : "day-theme")">
     
     <div class="lake-area">
-        <MudText Typo="Typo.h1" Style="font-size: 8rem; font-weight: bold;">@timeDisplay</MudText>
+        <div class="progress-container">
+            <MudProgressCircular Color="Color.Primary" 
+                               Value="@_progressValue" 
+                               Size="Size.Large" 
+                               Thickness="2"
+                               Style="height:300px; width:300px;">
+                <ChildContent>
+                     @if (isRunning)
+                     {
+                        <div class="fishing-scene">
+                            <div class="water-line"></div>
+                            <div class="bobber @GetFishingAnimationClass()">
+                                <div class="bobber-top"></div>
+                            </div>
+                            <div class="ripples"></div>
+                        </div>
+                     }
+                </ChildContent>
+            </MudProgressCircular>
+        </div>
+
+        <MudText Typo="Typo.h1" Class="timer-text">@timeDisplay</MudText>
+
+        <div class="quote-area">
+            <MudText Typo="Typo.body1" Class="italic-quote">"@_currentQuote"</MudText>
+        </div>
         
         @if (!isRunning)
         {
-            <MudButton Variant="Variant.Filled" 
-                       Color="Color.Primary" 
-                       Size="Size.Large" 
-                       OnClick="StartTimer"
-                       Style="font-size: 1.5rem; padding: 15px 40px;">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" 
+                       OnClick="StartTimer" Class="action-button">
                 Забросить удочку
             </MudButton>
         }
         else
         {
-            <MudButton Variant="Variant.Outlined" 
-                       Color="Color.Error" 
-                       OnClick="StopTimer">
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" 
+                       OnClick="StopTimer" Class="action-button">
                 Прервать рыбалку
             </MudButton>
         }
@@ -44,6 +67,13 @@
     <div class="settings-panel">
         <MudText Typo="Typo.h6" Class="mb-4">Настройки</MudText>
         
+        <MudNumericField @bind-Value="selectedMinutes" 
+                         Label="Минуты фокусировки" 
+                         Variant="Variant.Outlined" 
+                         Min="1" Max="120" 
+                         Class="mb-4"
+                         Disabled="@isRunning" />
+
         <MudSwitch @bind-Value="isNightMode" Label="Ночной режим" Color="Color.Secondary" />
         
         <MudDivider Class="my-4"/>
@@ -56,27 +86,65 @@
 </div>
 
 @code {
-    // Состояние интерфейса
+    private enum FishingAnimationState
+    {
+        None,           
+        InitialDrop,    
+        PassiveFishing, 
+        ActiveBite,     
+        FinalRaise      
+    }
+
+    private FishingAnimationState _animationState = FishingAnimationState.None;
+
+    private double _progressValue = 0; 
+    private string _currentQuote = "Забросьте удочку и начните путь к спокойствию...";
+    private bool _halfTimeNagSent = false; 
     private bool isNightMode;
     private int lofiVolume = 50;
     private bool playRain;
     
-    // Логика таймера
-    private int secondsLeft = 1800; // 30 минут
+    private readonly string[] _quotes = new[]
+    {
+        "Терпение — это ключ к самому крупному улову.",
+        "Труд рыбака незаметен, пока в сетях пусто.",
+        "Рыбалка — это не про рыбу, это про спокойствие.",
+        "Тишина — лучший друг рыбака.",
+        "Даже самая маленькая рыбка лучше, чем пустое ведро.",
+        "Настоящий рыбак видит не только рыбу, но и красоту момента."
+    };
+    
+    private int selectedMinutes = 30;
+    private int secondsLeft = 1800;
     private bool isRunning = false;
     private PeriodicTimer? timer;
     private CancellationTokenSource cts = new();
     
     private string timeDisplay => $"{(secondsLeft / 60):D2}:{(secondsLeft % 60):D2}";
-    
     private Fish? caughtFish;
 
     private async Task StartTimer()
     {
         if (isRunning) return;
-        
-        caughtFish = null; // Сбрасываем прошлый улов
+
+        caughtFish = null;
+        _halfTimeNagSent = false; 
         isRunning = true;
+        _progressValue = 0; 
+    
+        secondsLeft = selectedMinutes * 60; 
+        int totalSeconds = secondsLeft; 
+        double thresholdSeconds = (double)totalSeconds * 0.10;
+    
+        _currentQuote = _quotes[Random.Shared.Next(_quotes.Length)];
+
+        _animationState = FishingAnimationState.InitialDrop;
+        StateHasChanged();
+        await Task.Delay(500);
+
+        _animationState = FishingAnimationState.PassiveFishing;
+        StateHasChanged();
+
         cts = new CancellationTokenSource();
         timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
 
@@ -85,15 +153,45 @@
             while (await timer.WaitForNextTickAsync(cts.Token) && secondsLeft > 0)
             {
                 secondsLeft--;
+                _progressValue = ((double)(totalSeconds - secondsLeft) / totalSeconds) * 100;
+
+                // Уведомление на 50% времени
+                if (!_halfTimeNagSent && secondsLeft <= totalSeconds / 2)
+                {
+                    Snackbar.Add("Рыба уже кружит рядом, не спугни её!", Severity.Info, config => {
+                        config.Icon = Icons.Material.Filled.Waves;
+                    });
+                    _halfTimeNagSent = true;
+                }
+                if (secondsLeft <= thresholdSeconds && _animationState == FishingAnimationState.PassiveFishing)
+                {
+                    _animationState = FishingAnimationState.ActiveBite;
+                }
+                if (secondsLeft % 30 == 0 && secondsLeft > 0)
+                {
+                    _currentQuote = _quotes[Random.Shared.Next(_quotes.Length)];
+                }
+
                 StateHasChanged();
             }
 
             if (secondsLeft == 0)
             {
+                _animationState = FishingAnimationState.FinalRaise;
+                StateHasChanged();
+                await Task.Delay(500);
+
                 await FinishSession();
+                
+                if (caughtFish != null)
+                {
+                    Snackbar.Add($"Вы поймали: {caughtFish.Name}!", Severity.Success, config => {
+                        config.Icon = Icons.Material.Filled.SetMeal;
+                    });
+                }
             }
         }
-        catch (OperationCanceledException) { /* Таймер остановлен вручную */ }
+        catch (OperationCanceledException) { }
     }
 
     private void StopTimer()
@@ -101,6 +199,8 @@
         isRunning = false;
         cts.Cancel();
         timer?.Dispose();
+        _animationState = FishingAnimationState.None;
+        StateHasChanged();
     }
 
     private async Task FinishSession()
@@ -110,7 +210,7 @@
 
         try 
         {
-            var response = await Http.GetFromJsonAsync<Fish>($"api/fishery/catch?minutes=30");
+            var response = await Http.GetFromJsonAsync<Fish>($"api/fishery/catch?minutes={selectedMinutes}");
             if (response != null) 
             {
                 caughtFish = response;
@@ -128,14 +228,151 @@
         cts.Cancel();
         timer?.Dispose();
     }
+
+    private string GetFishingAnimationClass() => _animationState switch
+    {
+        FishingAnimationState.InitialDrop => "initial-drop",
+        FishingAnimationState.PassiveFishing => "passive-fishing",
+        FishingAnimationState.ActiveBite => "active-bite",
+        FishingAnimationState.FinalRaise => "final-raise",
+        _ => ""
+    };
 }
 
 <style>
     .main-container { display: flex; height: 100vh; transition: background-color 1s ease; overflow: hidden; }
     .day-theme { background-color: #a2d2ff; color: #2c3e50; }
     .night-theme { background-color: #1a1a2e; color: #ecf0f1; }
-    .lake-area { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .settings-panel { width: 300px; padding: 25px; border-left: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
-    .catch-notification { position: absolute; bottom: 50px; animation: bounce 1s infinite; }
+    .lake-area { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+    
+    .settings-panel { 
+        width: 300px; 
+        padding: 25px; 
+        border-left: 1px solid rgba(255,255,255,0.1); 
+        background: rgba(255,255,255,0.05); 
+        backdrop-filter: blur(10px); 
+    }
+
+    .progress-container {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .timer-text {
+        font-size: 8rem; 
+        font-weight: bold; 
+        z-index: 10;
+        margin-top: -20px; 
+    }
+
+    .quote-area {
+        height: 60px; 
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 20px 0;
+        max-width: 600px;
+        text-align: center;
+    }
+
+    .italic-quote {
+        font-style: italic;
+        opacity: 0.8;
+    }
+
+    .action-button {
+        font-size: 1.5rem; 
+        padding: 15px 40px;
+        margin-top: 10px;
+    }
+
+    .fishing-scene {
+        position: relative;
+        height: 150px;
+        width: 200px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .water-line {
+        position: absolute;
+        bottom: 40px;
+        width: 150px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.3);
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    .bobber {
+        position: relative;
+        width: 30px;
+        height: 30px;
+        background: #f44336;
+        border-radius: 50%;
+        border: 2px solid #2c3e50;
+        z-index: 5;
+        transform: translateY(30px); 
+    }
+
+    .bobber-top {
+        position: absolute;
+        top: -15px;
+        left: 10px;
+        width: 6px;
+        height: 20px;
+        background: white;
+        border: 2px solid #2c3e50;
+        border-radius: 4px;
+    }
+
+    .ripples {
+        position: absolute;
+        bottom: 35px;
+        width: 40px;
+        height: 15px;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        animation: ripple-effect 3s linear infinite;
+    }
+
+    .catch-notification { position: absolute; bottom: 50px; animation: bounce 1s infinite; z-index: 20;}
+
+    /* Анимации состояний */
+    .bobber.initial-drop { animation: drop 0.5s ease-out forwards; }
+    .bobber.passive-fishing { animation: bobbing 3s ease-in-out infinite; }
+    .bobber.active-bite { animation: chaotic-bite 0.5s ease-in-out infinite; border-color: #f1c40f; }
+    .bobber.final-raise { animation: raise 0.5s ease-in forwards; }
+
+    @@keyframes bobbing {
+        0%, 100% { transform: translateY(30px) rotate(0deg); }
+        50% { transform: translateY(40px) rotate(5deg); }
+    }
+
     @@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+    @@keyframes ripple-effect {
+        0% { transform: scale(1); opacity: 0.8; }
+        100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    @@keyframes drop {
+        0% { transform: translateY(-50px); opacity: 0; }
+        100% { transform: translateY(30px); opacity: 1; }
+    }
+
+    @@keyframes chaotic-bite {
+        0%, 100% { transform: translateY(30px) rotate(0deg); }
+        25% { transform: translateY(25px) rotate(-10deg); }
+        50% { transform: translateY(35px) rotate(15deg); }
+        75% { transform: translateY(28px) rotate(-8deg); }
+    }
+
+    @@keyframes raise {
+        0% { transform: translateY(30px); opacity: 1; }
+        100% { transform: translateY(-70px); opacity: 0; }
+    }
 </style>
