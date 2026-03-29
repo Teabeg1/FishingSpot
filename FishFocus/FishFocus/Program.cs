@@ -1,3 +1,5 @@
+using FishFocus.Repositories; 
+
 using FishFocus.Client.Pages;
 using FishFocus.Components;
 using MudBlazor.Services;
@@ -5,6 +7,7 @@ using MudBlazor.Services;
 using FishFocus.Services;
 using FishFocus.Interfaces;
 using FishFocus.Repositories;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
