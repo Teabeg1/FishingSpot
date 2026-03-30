@@ -6,4 +6,5 @@ public class Fish
     public int Rarity { get; set; }
     public int Points { get; set; }
     public string ImageUrl { get; set; } = string.Empty;
+    public int MinMinutes { get; set; } = 0;
 }

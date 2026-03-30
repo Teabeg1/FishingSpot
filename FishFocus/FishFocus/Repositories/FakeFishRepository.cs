@@ -12,6 +12,7 @@ public class FakeFishRepository : IFishRepository
             Name = "Карась обыкновенный",
             Rarity = 1,
             Points = 10,
+            MinMinutes = 0,
             ImageUrl = "images/fish/common_carp.png"
         },
         new Fish
@@ -19,6 +20,7 @@ public class FakeFishRepository : IFishRepository
             Name = "Красноперка",
             Rarity = 1,
             Points = 15,
+            MinMinutes = 10,
             ImageUrl = "images/fish/rudd.png"
         },
         new Fish
@@ -26,6 +28,7 @@ public class FakeFishRepository : IFishRepository
             Name = "Зеркальный карп",
             Rarity = 2,
             Points = 50,
+            MinMinutes = 20,
             ImageUrl = "images/fish/mirror_carp.png"
         },
         new Fish
@@ -33,6 +36,7 @@ public class FakeFishRepository : IFishRepository
             Name = "Синий Марлин",
             Rarity = 3,
             Points = 500,
+            MinMinutes = 45,
             ImageUrl = "images/fish/marlin.png"
         }
     };
