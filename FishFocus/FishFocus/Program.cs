@@ -16,6 +16,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 builder.Services.AddScoped<FishingService>();
+builder.Services.AddControllers();
 
 builder.Services.AddScoped<IFishRepository, FakeFishRepository>();
 var app = builder.Build();
@@ -34,7 +35,7 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
-
+app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(FishFocus.Client._Imports).Assembly);
