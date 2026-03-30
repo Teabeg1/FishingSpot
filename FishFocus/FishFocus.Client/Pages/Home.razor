@@ -54,11 +54,11 @@
             </MudButton>
         }
 
-        @if (caughtFish != null)
+        @if (catchResult != null)
         {
             <div class="catch-notification">
                 <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="mt-4">
-                    Вы поймали: @caughtFish.Name!
+                        Вы поймали: @catchResult.Fish.Name — +@catchResult.TotalPoints pts
                 </MudAlert>
             </div>
         }
@@ -122,13 +122,16 @@
     private CancellationTokenSource cts = new();
     
     private string timeDisplay => $"{(secondsLeft / 60):D2}:{(secondsLeft % 60):D2}";
-    private Fish? caughtFish;
+
+    private FishCatchResult? catchResult;
+    private int TotalScore = 0;
+    private List<FishCatchResult> CatchHistory = new();
 
     private async Task StartTimer()
     {
         if (isRunning) return;
 
-        caughtFish = null;
+        catchResult = null;
         _halfTimeNagSent = false; 
         isRunning = true;
         _progressValue = 0; 
@@ -184,9 +187,10 @@
 
                 await FinishSession();
                 
-                if (caughtFish != null)
+                if (catchResult != null)
                 {
-                    Snackbar.Add($"Вы поймали: {caughtFish.Name}!", Severity.Success, config => {
+                    Snackbar.Add($"Вы поймали: {catchResult.Fish.Name}!", Severity.Success, config =>
+                    {
                         config.Icon = Icons.Material.Filled.SetMeal;
                     });
                 }
@@ -211,16 +215,18 @@
 
         try 
         {
-            var response = await Http.GetFromJsonAsync<Fish>($"api/fishery/catch?minutes={selectedMinutes}");
+            var response = await Http.GetFromJsonAsync<FishCatchResult>($"api/fishery/catch?minutes={selectedMinutes}");
             if (response != null) 
             {
-                caughtFish = response;
+                catchResult = response;
+                TotalScore += response.TotalPoints;
+                CatchHistory.Add(response);
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Ошибка связи с сервером: {ex.Message}");
-            caughtFish = new Fish { Name = " (Бэкенд не ответил)" };
+            catchResult = new FishCatchResult { Fish = new Fish { Name = "(Бэкенд не ответил)" } };
         }
     }
 
