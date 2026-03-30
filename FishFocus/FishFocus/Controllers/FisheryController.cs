@@ -16,8 +16,9 @@ public class FisheryController : ControllerBase
     }
 
     [HttpGet("catch")]
-    public async Task<ActionResult<Fish>> GetCatch([FromQuery] int minutes)
+    public async Task<ActionResult<FishCatchResult>> GetCatch([FromQuery] int minutes)
     {
+        if (minutes < 0) return BadRequest("minutes не может быть отрицательным");
         var result = await _fishingService.CalculateReward(minutes);
         return Ok(result);
     }
