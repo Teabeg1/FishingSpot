@@ -13,7 +13,7 @@ public class FakeFishRepository : IFishRepository
             Rarity = 1,
             Points = 10,
             MinMinutes = 0,
-            ImageUrl = "images/fish/common_carp.png"
+            ImageUrl = "/images/fish/common_carp.png"
         },
         new Fish
         {
@@ -46,3 +46,4 @@ public class FakeFishRepository : IFishRepository
         return Task.FromResult(_fakeDb);
     }
 }
+

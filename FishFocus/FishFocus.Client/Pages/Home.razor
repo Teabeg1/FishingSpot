@@ -3,21 +3,47 @@
 @using FishFocus.Shared.Models
 @using System.Threading
 @using MudBlazor
+@using FishFocus.Client.Dialogs
 @implements IDisposable
 @inject HttpClient Http
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@inject IDialogService DialogService
 
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 <PageTitle>Рыбалка</PageTitle>
 
 <div class="main-container @(isNightMode ? "night-theme" : "day-theme")">
     
-    <div class="lake-area">
+    <div class="lake-area" id="lake-container" @onclick="HandleLakeClick">
+        <div class="fog-overlay @(playFog ? "fog-active" : "")"></div>
+
+        @if (isRainEnabled) 
+        {
+            <div class="rain-overlay" @key="@("rain-layer-v3")">
+                @for (int i = 0; i < 60; i++) 
+                {
+                    var leftPosition = (i * 1.67) % 100; 
+                    var fallDelay = (i * 0.05) % 2;
+                    var fallDuration = 0.6 + (i % 4) * 0.1;
+
+                    <div class="rain-drop" 
+                         style="left: @(leftPosition.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))%; 
+                                animation-delay: @(fallDelay.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))s; 
+                                animation-duration: @(fallDuration.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))s;">
+                    </div>
+                }
+            </div>
+        }
+
         <div class="progress-container">
             <MudProgressCircular Color="Color.Primary"
-                               Value="@_progressValue" 
-                               Size="Size.Large" 
-                               Thickness="2"
-                               Style="height:300px; width:300px;">
+                                 Value="@_progressValue" 
+                                 Size="Size.Large" 
+                                 Thickness="2"
+                                 Style="height:300px; width:300px;">
                 <ChildContent>
                      @if (isRunning)
                      {
@@ -27,6 +53,7 @@
                                 <div class="bobber-top"></div>
                             </div>
                             <div class="ripples"></div>
+                            <div class="splash-effect @(showSplash ? "splash-active" : "")"></div>
                         </div>
                      }
                 </ChildContent>
@@ -53,57 +80,317 @@
                 Прервать рыбалку
             </MudButton>
         }
-
-        @if (catchResult != null)
-        {
-            <div class="catch-notification">
-                <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="mt-4">
-                        Вы поймали: @catchResult.Fish.Name — +@catchResult.TotalPoints pts
-                </MudAlert>
-            </div>
-        }
     </div>
 
-    <div class="settings-panel">
-        <MudText Typo="Typo.h6" Class="mb-4">Настройки</MudText>
-        
-        <MudNumericField @bind-Value="selectedMinutes" 
-                         Label="Минуты фокусировки" 
-                         Variant="Variant.Outlined" 
-                         Min="1" Max="120" 
-                         Class="mb-4"
-                         Disabled="@isRunning" />
+<div class="settings-panel">
 
-        <MudSwitch @bind-Value="isNightMode" Label="Ночной режим" Color="Color.Secondary" />
+    <div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h6">Настройки</MudText>
+    <MudIconButton Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" OnClick="OpenLoginDialog" />
+    </div>
+
+    <MudText Typo="Typo.overline" Class="mb-2 d-block" Style="text-align:center">Время фокусировки</MudText>
+    
+<div class="time-picker-container">
+    <div class="time-box" 
+         @onmousedown='(e) => HandleMouseDown(e, "hours")'
+         @onmouseup="HandleMouseUp"
+         @onmouseleave="HandleMouseUp"
+         @ondblclick='() => EnableInputMode("hours")'>
         
+        @if (isHoursInputMode)
+        {
+            <input id="h-input-field" type="number" class="time-input-hidden" 
+                   value="@displayHours" 
+                   @onchange='(e) => ManualUpdate(e, "hours")' 
+                   @onblur='() => isHoursInputMode = false'
+                   @onkeydown="@(e => { if (e.Key == "Enter") isHoursInputMode = false; })" />
+        }
+        
+        <span class="time-value">@displayHours</span>
+        <span class="time-label">ч</span>
+    </div>
+
+    <div class="time-box" 
+         @onmousedown='(e) => HandleMouseDown(e, "minutes")'
+         @onmouseup="HandleMouseUp"
+         @onmouseleave="HandleMouseUp"
+         @ondblclick='() => EnableInputMode("minutes")'>
+        
+        @if (isMinutesInputMode)
+        {
+            <input id="m-input-field" type="number" class="time-input-hidden" 
+                   value="@displayMinutes" 
+                   @onchange='(e) => ManualUpdate(e, "minutes")' 
+                   @onblur='() => isMinutesInputMode = false' />
+        }
+        <span class="time-value">@displayMinutes.ToString("D2")</span>
+        <span class="time-label">мин</span>
+    </div>
+</div>
+    <div class="d-flex align-center justify-space-between mb-2">
+        <MudSwitch @bind-Value="isNightMode" Label="Ночной режим" Color="Color.Secondary" />
+    </div>
+
+        <div class="d-flex align-center justify-space-between mb-2">
+            <MudSwitch Value="isRadioEnabled" 
+                       T="bool"
+                       ValueChanged="ToggleRadio" 
+                       Label="Радио" 
+                       Color="Color.Secondary" />
+    
+            @if (isRadioEnabled)
+            {
+                <div style="width: 120px;" class="ml-4">
+                    <MudSlider T="int" 
+                               Value="radioVolume" 
+                               ValueChanged="UpdateRadioVolume" 
+                               Min="0" Max="100" 
+                               Size="Size.Small"
+                               Color="Color.Secondary">
+                        <span class="volume-label" style="font-size: 12px;">Громкость: @radioVolume%</span>
+                    </MudSlider>
+                </div>
+            }
+
+        </div>
+
+        <div class="d-flex align-center justify-space-between mb-2">
+            <MudSwitch Value="isRainEnabled" 
+                       T="bool"
+                       ValueChanged="ToggleRain" 
+                       Label="Дождь" 
+                       Color="Color.Info" />
+    
+            @if (isRainEnabled)
+            {
+                <div style="width: 120px;" class="ml-4">
+                    <MudSlider T="int" 
+                               Value="rainVolume" 
+                               ValueChanged="UpdateRainVolume" 
+                               Min="0" Max="100" 
+                               Size="Size.Small"
+                               Color="Color.Info">
+                        <span class="volume-label" style="font-size: 12px;">Громкость: @rainVolume%</span>
+                    </MudSlider>
+                </div>
+            }
+
+        </div>
+
+        <div class="d-flex align-center justify-space-between mb-4">
+            <MudSwitch @bind-Value="playFog" Label="Туман" Color="Color.Default" />
+        </div>
+
         <MudDivider Class="my-4"/>
         
-        <MudText Typo="Typo.body2">Громкость лоу-фай</MudText>
-        <MudSlider @bind-Value="lofiVolume" Min="0" Max="100" Color="Color.Info" />
-        
-        <MudCheckBox @bind-Value="playRain" Label="Звуки дождя" Color="Color.Primary" />
+        @if (showDevTools)
+        {
+            <TestTools IsRunning="@isRunning" 
+                       SelectedMinutes="@selectedMinutes" 
+                       OnFastForward="@(() => secondsLeft = 5)" />
+        }
+
+        <audio id="radio-audio" src="@currentTrackUrl" @onended="PlayNextTrack"></audio>
     </div>
 </div>
 
+<audio id="rain-audio" src="audio/rain.mp3" loop></audio>
+
 @code {
-    private enum FishingAnimationState
+    private bool isRadioEnabled = false;
+    private int radioVolume = 50;
+    private string currentTrackUrl = "";
+    private int currentTrackIndex = 1;
+    private bool isRadioInitialized = false;
+    private bool isRainEnabled = false;
+    private int rainVolume = 50;
+    private bool playFog = false;
+    private bool showDevTools = true;
+    private bool showSplash = false;
+    private bool isNightMode = false;
+    private int selectedMinutes = 30;
+    private int secondsLeft = 1800;
+    private bool isRunning = false;
+    private double _progressValue = 0;
+    private string _currentQuote = "Забросьте удочку и начните путь к спокойствию...";
+    private bool _halfTimeNagSent = false;
+    private PeriodicTimer? timer;
+    private CancellationTokenSource cts = new();
+    private FishCatchResult? catchResult;
+    private int TotalScore = 0;
+    private List<FishCatchResult> CatchHistory = new();
+    private string timeDisplay => $"{(secondsLeft / 60):D2}:{(secondsLeft % 60):D2}";
+    private CancellationTokenSource? _adjustCts;
+    private bool _isAdjusting = false;
+    private async Task ToggleRadio(bool value)
     {
-        None,           
-        InitialDrop,    
-        PassiveFishing, 
-        ActiveBite,     
-        FinalRaise      
+        isRadioEnabled = value;
+
+        if (isRadioEnabled)
+        {
+            try 
+            {
+                if (!isRadioInitialized)
+                {
+                    currentTrackIndex = Random.Shared.Next(1, 11);
+                    currentTrackUrl = $"audio/radio/track{currentTrackIndex}.mp3";
+                    isRadioInitialized = true;
+                    StateHasChanged();
+                    await Task.Delay(300);
+                    await JS.InvokeVoidAsync("audioInterop.play", "radio-audio");
+                    double randomStartTime = Random.Shared.Next(10, 60); 
+                    await JS.InvokeVoidAsync("audioInterop.setCurrentTime", "radio-audio", randomStartTime);
+                }
+                await UpdateRadioVolume(radioVolume);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка радио: {ex.Message}");
+
+            }
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", 0);
+        }
     }
 
-    private FishingAnimationState _animationState = FishingAnimationState.None;
+    private async Task UpdateRadioVolume(int value)
+    {
+        radioVolume = value;
+        int actualVolume = isRadioEnabled ? radioVolume : 0;
+        await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", actualVolume);
+    }
 
-    private double _progressValue = 0; 
-    private string _currentQuote = "Забросьте удочку и начните путь к спокойствию...";
-    private bool _halfTimeNagSent = false; 
-    private bool isNightMode;
-    private int lofiVolume = 50;
-    private bool playRain;
+    private async Task PlayNextTrack()
+    {
+        currentTrackIndex = currentTrackIndex >= 10 ? 1 : currentTrackIndex + 1;
+        currentTrackUrl = $"audio/radio/track{currentTrackIndex}.mp3";
     
+        StateHasChanged();
+        await Task.Delay(100);
+    
+        await JS.InvokeVoidAsync("audioInterop.play", "radio-audio");
+        await UpdateRadioVolume(radioVolume);
+    }
+
+    private async Task OpenLoginDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<LoginDialog>("Личный кабинет", options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            Snackbar.Add("Запрос отправлен бэкенд-бро!", Severity.Info);
+        }
+    }
+
+    private int displayHours = 0;
+    private int displayMinutes = 30;
+    private bool isHoursInputMode = false;
+    private bool isMinutesInputMode = false;
+    private bool isMouseDown = false;
+    private void SyncSelectedMinutes()
+    {
+        if (displayHours >= 2) 
+        {
+            displayHours = 2;
+            displayMinutes = 0;
+        }
+        
+        selectedMinutes = (displayHours * 60) + displayMinutes;
+        if (selectedMinutes < 1) selectedMinutes = 1;
+        
+        if (!isRunning) secondsLeft = selectedMinutes * 60;
+        StateHasChanged();
+    }
+
+    private async Task HandleMouseDown(MouseEventArgs e, string type)
+    {
+        if (isRunning || isHoursInputMode || isMinutesInputMode) return;
+
+        bool isTopHalf = e.OffsetY < 40;
+        int step = isTopHalf ? 1 : -1;
+
+        _isAdjusting = true;
+        _adjustCts = new CancellationTokenSource();
+
+        try
+        {
+            int currentDelay = 300;
+            
+            while (_isAdjusting)
+            {
+                ChangeValue(type, step);
+                StateHasChanged();
+
+                await Task.Delay(currentDelay, _adjustCts.Token);
+
+                if (currentDelay > 50) currentDelay -= 40; 
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private void HandleMouseUp()
+    {
+        _isAdjusting = false;
+        _adjustCts?.Cancel();
+    }
+
+    private void HandleWheel(WheelEventArgs e, string type)
+    {
+        if (isRunning || !isMouseDown) return;
+
+        int step = e.DeltaY < 0 ? 1 : -1;
+        ChangeValue(type, step);
+    }
+
+    private void ChangeValue(string type, int step)
+    {
+        if (isHoursInputMode || isMinutesInputMode) return;
+
+        if (type == "hours")
+        {
+            displayHours += step;
+            if (displayHours > 2) displayHours = 0;
+            if (displayHours < 0) displayHours = 2;
+        }
+        else
+        {
+            displayMinutes += step;
+            if (displayMinutes > 59) displayMinutes = 0;
+            if (displayMinutes < 0) displayMinutes = 59;
+        }
+        SyncSelectedMinutes();
+    }
+
+    private async Task EnableInputMode(string type)
+    {
+        if (isRunning) return;
+        HandleMouseUp();
+        if (type == "hours") isHoursInputMode = true;
+        else isMinutesInputMode = true;
+        StateHasChanged();  
+        await Task.Delay(50);
+        string elementId = type == "hours" ? "h-input-field" : "m-input-field";
+        await JS.InvokeVoidAsync("audioInterop.focusElement", elementId);
+    }
+
+    private void ManualUpdate(ChangeEventArgs e, string type)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int val))
+        {
+            if (type == "hours") displayHours = Math.Clamp(val, 0, 2);
+            else displayMinutes = Math.Clamp(val, 0, 59);
+        }
+        isHoursInputMode = false;
+        isMinutesInputMode = false;
+        SyncSelectedMinutes();
+    }
+
     private readonly string[] _quotes = new[]
     {
         "Терпение — это ключ к самому крупному улову.",
@@ -112,43 +399,26 @@
         "Тишина — лучший друг рыбака.",
         "Даже самая маленькая рыбка лучше, чем пустое ведро.",
         "Настоящий рыбак видит не только рыбу, но и красоту момента.",
-        "Рыбак рыбака, но вместе пока не живут."
+        "Рыбак рыбака видит издалека."
     };
-    
-    private int selectedMinutes = 30;
-    private int secondsLeft = 1800;
-    private bool isRunning = false;
-    private PeriodicTimer? timer;
-    private CancellationTokenSource cts = new();
-    
-    private string timeDisplay => $"{(secondsLeft / 60):D2}:{(secondsLeft % 60):D2}";
 
-    private FishCatchResult? catchResult;
-    private int TotalScore = 0;
-    private List<FishCatchResult> CatchHistory = new();
+    private enum FishingAnimationState { None, InitialDrop, PassiveFishing, ActiveBite, FinalRaise }
+    private FishingAnimationState _animationState = FishingAnimationState.None;
 
     private async Task StartTimer()
     {
         if (isRunning) return;
-
-        catchResult = null;
-        _halfTimeNagSent = false; 
         isRunning = true;
-        _progressValue = 0; 
-    
-        secondsLeft = selectedMinutes * 60; 
-        int totalSeconds = secondsLeft; 
+        _progressValue = 0;
+        secondsLeft = selectedMinutes * 60;
+        int totalSeconds = secondsLeft;
         double thresholdSeconds = (double)totalSeconds * 0.10;
-    
+        _halfTimeNagSent = false;
+        catchResult = null;
         _currentQuote = _quotes[Random.Shared.Next(_quotes.Length)];
-
         _animationState = FishingAnimationState.InitialDrop;
-        StateHasChanged();
-        await Task.Delay(500);
-
+        await TriggerSplash();
         _animationState = FishingAnimationState.PassiveFishing;
-        StateHasChanged();
-
         cts = new CancellationTokenSource();
         timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
 
@@ -159,18 +429,17 @@
                 secondsLeft--;
                 _progressValue = ((double)(totalSeconds - secondsLeft) / totalSeconds) * 100;
 
-                // Уведомление на 50% времени
                 if (!_halfTimeNagSent && secondsLeft <= totalSeconds / 2)
                 {
-                    Snackbar.Add("Рыба уже кружит рядом, не спугни её!", Severity.Info, config => {
-                        config.Icon = Icons.Material.Filled.Waves;
-                    });
+                    Snackbar.Add("Рыба уже кружит рядом!", Severity.Info);
                     _halfTimeNagSent = true;
                 }
+
                 if (secondsLeft <= thresholdSeconds && _animationState == FishingAnimationState.PassiveFishing)
                 {
                     _animationState = FishingAnimationState.ActiveBite;
                 }
+
                 if (secondsLeft % 30 == 0 && secondsLeft > 0)
                 {
                     _currentQuote = _quotes[Random.Shared.Next(_quotes.Length)];
@@ -181,24 +450,53 @@
 
             if (secondsLeft == 0)
             {
-                _animationState = FishingAnimationState.FinalRaise;
-                StateHasChanged();
-                await Task.Delay(500);
-
                 await FinishSession();
-                
-                if (catchResult != null)
-                {
-                    Snackbar.Add($"Вы поймали: {catchResult.Fish.Name}!", Severity.Success, config =>
-                    {
-                        config.Icon = Icons.Material.Filled.SetMeal;
-                    });
-                }
             }
         }
         catch (OperationCanceledException) { }
     }
 
+private async Task FinishSession()
+{
+    _animationState = FishingAnimationState.FinalRaise;
+    await TriggerSplash();
+    isRunning = false;
+    timer?.Dispose();
+    cts.Cancel();
+
+    try 
+    {
+        var response = await Http.GetFromJsonAsync<FishCatchResult>($"api/fishery/catch?minutes={selectedMinutes}");
+        if (response != null) 
+        {
+            catchResult = response;
+            TotalScore += response.TotalPoints;
+            CatchHistory.Add(response);
+
+            var parameters = new DialogParameters { 
+                ["CatchResult"] = response, 
+                ["IsNight"] = isNightMode 
+            };
+
+            var options = new DialogOptions { 
+                BackdropClick = false, 
+                CloseOnEscapeKey = true, 
+                MaxWidth = MaxWidth.ExtraSmall, 
+                FullWidth = true,
+                NoHeader = false
+            };
+            
+            await DialogService.ShowAsync<CatchDialog>("Улов", parameters, options);
+        }
+    }
+    catch (Exception ex) 
+    { 
+        Console.WriteLine($"Ошибка API: {ex.Message}");
+    }
+
+    _animationState = FishingAnimationState.None;
+    StateHasChanged();
+}
     private void StopTimer()
     {
         isRunning = false;
@@ -208,32 +506,42 @@
         StateHasChanged();
     }
 
-    private async Task FinishSession()
+private async Task ToggleRain(bool value)
     {
-        isRunning = false;
-        timer?.Dispose();
-
-        try 
+        isRainEnabled = value;
+        
+        if (isRainEnabled)
         {
-            var response = await Http.GetFromJsonAsync<FishCatchResult>($"api/fishery/catch?minutes={selectedMinutes}");
-            if (response != null) 
-            {
-                catchResult = response;
-                TotalScore += response.TotalPoints;
-                CatchHistory.Add(response);
-            }
+            await JS.InvokeVoidAsync("audioInterop.play", "rain-audio");
+            await JS.InvokeVoidAsync("audioInterop.setVolume", "rain-audio", rainVolume);
         }
-        catch (Exception ex)
+        else
         {
-            Console.WriteLine($"Ошибка связи с сервером: {ex.Message}");
-            catchResult = new FishCatchResult { Fish = new Fish { Name = "(Бэкенд не ответил)" } };
+            await JS.InvokeVoidAsync("audioInterop.pause", "rain-audio");
         }
+        
+        StateHasChanged();
     }
 
-    public void Dispose()
+    private async Task UpdateRainVolume(int value)
     {
-        cts.Cancel();
-        timer?.Dispose();
+        rainVolume = value;
+        await JS.InvokeVoidAsync("audioInterop.setVolume", "rain-audio", rainVolume);
+        StateHasChanged();
+    }
+
+    private async Task HandleLakeClick(MouseEventArgs e)
+    {
+        await JS.InvokeVoidAsync("visualEffects.createRipple", "#lake-container", e.OffsetX, e.OffsetY);
+    }
+
+    private async Task TriggerSplash()
+    {
+        showSplash = true;
+        StateHasChanged();
+        await Task.Delay(600);
+        showSplash = false;
+        StateHasChanged();
     }
 
     private string GetFishingAnimationClass() => _animationState switch
@@ -244,142 +552,10 @@
         FishingAnimationState.FinalRaise => "final-raise",
         _ => ""
     };
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        timer?.Dispose();
+    }
 }
-
-<style>
-    .main-container { display: flex; height: 100vh; transition: background-color 1s ease; overflow: hidden; }
-    .day-theme { background-color: #a2d2ff; color: #2c3e50; }
-    .night-theme { background-color: #1a1a2e; color: #ecf0f1; }
-    .lake-area { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-    
-    .settings-panel { 
-        width: 300px; 
-        padding: 25px; 
-        border-left: 1px solid rgba(255,255,255,0.1); 
-        background: rgba(255,255,255,0.05); 
-        backdrop-filter: blur(10px); 
-    }
-
-    .progress-container {
-        position: relative;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .timer-text {
-        font-size: 8rem; 
-        font-weight: bold; 
-        z-index: 10;
-        margin-top: -20px; 
-    }
-
-    .quote-area {
-        height: 60px; 
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 20px 0;
-        max-width: 600px;
-        text-align: center;
-    }
-
-    .italic-quote {
-        font-style: italic;
-        opacity: 0.8;
-    }
-
-    .action-button {
-        font-size: 1.5rem; 
-        padding: 15px 40px;
-        margin-top: 10px;
-    }
-
-    .fishing-scene {
-        position: relative;
-        height: 150px;
-        width: 200px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .water-line {
-        position: absolute;
-        bottom: 40px;
-        width: 150px;
-        height: 2px;
-        background: rgba(255, 255, 255, 0.3);
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-    }
-
-    .bobber {
-        position: relative;
-        width: 30px;
-        height: 30px;
-        background: #f44336;
-        border-radius: 50%;
-        border: 2px solid #2c3e50;
-        z-index: 5;
-        transform: translateY(30px); 
-    }
-
-    .bobber-top {
-        position: absolute;
-        top: -15px;
-        left: 10px;
-        width: 6px;
-        height: 20px;
-        background: white;
-        border: 2px solid #2c3e50;
-        border-radius: 4px;
-    }
-
-    .ripples {
-        position: absolute;
-        bottom: 35px;
-        width: 40px;
-        height: 15px;
-        border: 2px solid rgba(255, 255, 255, 0.4);
-        border-radius: 50%;
-        animation: ripple-effect 3s linear infinite;
-    }
-
-    .catch-notification { position: absolute; bottom: 50px; animation: bounce 1s infinite; z-index: 20;}
-
-    /* Анимации состояний */
-    .bobber.initial-drop { animation: drop 0.5s ease-out forwards; }
-    .bobber.passive-fishing { animation: bobbing 3s ease-in-out infinite; }
-    .bobber.active-bite { animation: chaotic-bite 0.5s ease-in-out infinite; border-color: #f1c40f; }
-    .bobber.final-raise { animation: raise 0.5s ease-in forwards; }
-
-    @@keyframes bobbing {
-        0%, 100% { transform: translateY(30px) rotate(0deg); }
-        50% { transform: translateY(40px) rotate(5deg); }
-    }
-
-    @@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-
-    @@keyframes ripple-effect {
-        0% { transform: scale(1); opacity: 0.8; }
-        100% { transform: scale(2.5); opacity: 0; }
-    }
-
-    @@keyframes drop {
-        0% { transform: translateY(-50px); opacity: 0; }
-        100% { transform: translateY(30px); opacity: 1; }
-    }
-
-    @@keyframes chaotic-bite {
-        0%, 100% { transform: translateY(30px) rotate(0deg); }
-        25% { transform: translateY(25px) rotate(-10deg); }
-        50% { transform: translateY(35px) rotate(15deg); }
-        75% { transform: translateY(28px) rotate(-8deg); }
-    }
-
-    @@keyframes raise {
-        0% { transform: translateY(30px); opacity: 1; }
-        100% { transform: translateY(-70px); opacity: 0; }
-    }
-</style>
