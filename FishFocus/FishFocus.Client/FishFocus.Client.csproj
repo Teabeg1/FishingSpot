@@ -17,4 +17,8 @@
     <ProjectReference Include="..\..\FishFocus.Shared\FishFocus.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\audio\" />
+  </ItemGroup>
+
 </Project>

@@ -24,9 +24,242 @@ h1:focus {
     outline: none;
 }
 
+
+.night-theme .volume-label,
+.night-theme .mud-input-label,
+.night-theme .mud-input-root,
+.night-theme .settings-panel h6,
+.night-theme .mud-checkbox .mud-typography,
+.night-theme .timer-text {
+    color: #ffffff !important;
+}
+
+.night-theme .mud-input-outlined-border {
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.night-theme .mud-icon-root {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.mud-snackbar {
+    transition: opacity 0ms !important;
+    animation-duration: 0ms !important;
+}
+
+.blazor-error-boundary,
+.blazor-error-boundary .mud-typography,
+.blazor-error-boundary b,
+.blazor-error-boundary span {
+    background-color: #fff9c4 !important;
+    color: #ef6c00 !important;
+    background-image: url(data:image/svg+xml;base64,...) !important;
+}
+
+    .blazor-error-boundary .mud-button-filled {
+        background-color: #ffa000 !important;
+        color: #ffffff !important;
+    }
+
 .validation-message {
     color: #e50000;
 }
+
+.lightning-flash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    opacity: 0;
+    z-index: 300;
+    pointer-events: none;
+    transition: opacity 0.05s ease-out;
+}
+
+.flash-active {
+    opacity: 0.7;
+}
+
+.clouds-visual-area, .birds-visual-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.clouds-visual-area {
+    z-index: 10;
+}
+.birds-visual-area {
+    z-index: 150;
+}
+.birds-visual-area, .action-button {
+    animation: fadeInEffect 1.5s ease-in-out forwards;
+}
+
+.bird {
+    background-image: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/174479/bird-cells-new.svg');
+    filter: invert(34%) sepia(55%) saturate(427%) hue-rotate(141deg) brightness(93%) contrast(91%);
+    background-size: auto 100%;
+    width: 88px;
+    height: 125px;
+    will-change: background-position;
+    animation-name: fly-cycle;
+    animation-timing-function: steps(10);
+    animation-iteration-count: infinite; /* Всегда машут крыльями */
+}
+
+.bird-one {
+    animation-duration: 1s;
+    animation-delay: -0.5s;
+}
+
+.bird-two {
+    animation-duration: 0.9s;
+    animation-delay: -0.75s;
+}
+
+.bird-three {
+    animation-duration: 1.25s;
+    animation-delay: -0.25s;
+}
+
+.bird-four {
+    animation-duration: 1.1s;
+    animation-delay: -0.5s;
+}
+
+.bird-container {
+    position: absolute;
+    /* Начальная позиция за левым краем, top задаем в C# */
+    left: -10%;
+    transform: scale(0) translateX(-10vw);
+    will-change: transform;
+    animation-name: fly-right-erratic;
+    animation-timing-function: linear;
+    animation-iteration-count: 1; /* Пролететь только один раз */
+    animation-fill-mode: forwards; /* Остаться за экраном до удаления */
+}
+
+.bird-container-one {
+    animation-duration: 15s;
+    animation-delay: 0;
+}
+
+.bird-container-two {
+    animation-duration: 16s;
+    animation-delay: 1s;
+}
+
+.bird-container-three {
+    animation-duration: 14.6s;
+    animation-delay: 9.5s;
+}
+
+.bird-container-four {
+    animation-duration: 16s;
+    animation-delay: 10.25s;
+}
+
+.cloud {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 50px;
+    animation: cloud-drift linear infinite;
+    will-change: transform;
+    filter: blur(5px);
+}
+    .cloud::after, .cloud::before {
+        content: '';
+        position: absolute;
+        background: inherit;
+        border-radius: 50%;
+    }
+
+.cloud-1 {
+    width: 200px;
+    height: 60px;
+    top: 10%;
+    left: -250px;
+    animation-duration: 120s;
+    opacity: 0.8;
+}
+
+.cloud-1::after {
+    width: 100px;
+    height: 100px;
+    top: -50px;
+    left: 30px;
+}
+
+.cloud-1::before {
+    width: 80px;
+    height: 80px;
+    top: -30px;
+    left: 100px;
+}
+
+.cloud-2 {
+    width: 150px;
+    height: 50px;
+    top: 25%;
+    left: -200px;
+    animation-duration: 90s;
+    animation-delay: 30s;
+    opacity: 0.5;
+    transform: scale(0.7);
+}
+
+.cloud-2::after {
+    width: 80px;
+    height: 80px;
+    top: -40px;
+    left: 20px;
+}
+
+.cloud-3 {
+    width: 250px;
+    height: 70px;
+    top: 15%;
+    left: -300px;
+    animation-duration: 150s;
+    animation-delay: 60s;
+    opacity: 0.7;
+}
+
+.cloud-3::after {
+    width: 120px;
+    height: 120px;
+    top: -60px;
+    left: 50px;
+}
+
+.cloud-3::before {
+    width: 90px;
+    height: 90px;
+    top: -40px;
+    left: 130px;
+}
+
+.lightning-bolt {
+    position: absolute;
+    filter: drop-shadow(0 0 10px white);
+}
+.lightning-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 190;
+}
+
 
 .time-picker-container {
     display: flex;
@@ -36,21 +269,42 @@ h1:focus {
 }
 
 .time-box {
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.2s ease;
     position: relative;
+    padding: 0; 
+    overflow: hidden;
+    height: 100px; 
 }
 
+
+.time-zone {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.time-zone.top,
+.time-zone.bottom {
+    height: 20%;
+}
+
+.time-zone.middle {
+    height: 60%;
+}
+
+.time-box:hover .time-zone.top, 
+.time-box:hover .time-zone.bottom {
+    opacity: 1;
+}
+
+.time-zone.top:hover, .time-zone.bottom:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.time-value {
+    font-size: 1.8rem;
+}
 .time-box:hover {
     border-color: var(--mud-palette-primary);
     background: rgba(255, 255, 255, 0.15);
@@ -63,9 +317,12 @@ h1:focus {
 }
 
 .time-label {
-    font-size: 0.7rem;
+    font-size: 0.9rem;
     text-transform: uppercase;
-    opacity: 0.6;
+    opacity: 0.5;
+    bottom: 20px;
+    position: absolute;
+    pointer-events: none;
 }
 
 .time-input-hidden {
@@ -107,9 +364,9 @@ h1:focus {
     color: white;
 }
 
-    .blazor-error-boundary::after {
-        content: "An error has occurred.";
-    }
+.blazor-error-boundary::after {
+    content: "An error has occurred.";
+}
 
 .main-container {
     display: flex;
@@ -128,6 +385,18 @@ h1:focus {
         color: #ecf0f1;
     }
 
+
+.fishing-ui-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Это значение опускает панель ниже. 
+       Можешь менять 100px на 150px, если хочешь еще ниже */
+    margin-top: 200px;
+    width: 100%;
+    z-index: 200; /* Чтобы кнопки всегда были кликабельны */
+}
+
 .lake-area {
     flex-grow: 1;
     display: flex;
@@ -144,6 +413,18 @@ h1:focus {
     flex-direction: column;
     backdrop-filter: blur(15px);
     transition: all 0.5s ease;
+    overflow-y: auto;
+    max-height: 100vh;
+
+}
+
+.settings-panel::-webkit-scrollbar {
+    width: 4px;
+}
+
+.settings-panel::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
 }
 
 .day-theme .settings-panel {
@@ -155,6 +436,76 @@ h1:focus {
     background: rgba(0, 0, 0, 0.4);
     border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+.score-display-panel {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 12px 16px;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+}
+
+.night-theme .score-display-panel {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 1. Весь контейнер (желтая рамка) */
+.test-tools-container {
+    padding: 12px !important; /* Внутренние отступы (сделай меньше, если хочешь сжать блок) */
+    margin: 10px auto !important;
+    max-width: 280px; /* Ограничение ширины всей панели */
+}
+
+/* 3. Кнопка "СКИПНУТЬ" */
+.test-tools-button {
+    height: 32px !important; /* Высота кнопки (сделай меньше, например 28px) */
+    font-size: 0.7rem !important; /* Размер текста внутри кнопки */
+    min-width: 180px !important; /* Ширина кнопки */
+}
+
+.score-icon-box {
+    background: rgba(255, 193, 7, 0.2);
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+
+.score-text-box {
+    display: flex;
+    flex-direction: column;
+}
+
+.score-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.7;
+    font-weight: 500;
+}
+
+.score-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--mud-palette-warning);
+    line-height: 1.2;
+}
+
+.score-display-panel:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+
+
 
 .timer-text {
     font-size: 8rem;
@@ -258,6 +609,12 @@ h1:focus {
     pointer-events: none;
     z-index: 200;
     overflow: hidden;
+    opacity: 0;
+    transition: opacity 2s ease-in-out;
+}
+
+.rain-active {
+    opacity: 1;
 }
 
 .rain-drop {
@@ -268,6 +625,49 @@ h1:focus {
     top: -60px;
     animation: rain-fall linear infinite;
     box-shadow: 0 0 2px rgba(255,255,255,0.4);
+}
+
+.setting-block {
+    display: flex;
+    align-items: center; 
+    justify-content: b;
+    min-height: 48px;
+    margin-bottom: 12px;
+    gap: 10px; 
+}
+
+.setting-block .mud-switch {
+    flex-shrink: 0;
+    width: 140px;
+    margin: 0;
+}
+
+.slider-wrapper {
+    flex-grow: 1;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(10px);
+    transition: all 0.3s ease-in-out;
+    visibility: hidden;
+}
+
+.slider-wrapper.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+    visibility: visible;
+}
+
+.slider-wrapper .mud-slider {
+    margin: 0;
+}
+
+.volume-label {
+    font-size: 10px;
+    white-space: nowrap;
+    position: absolute;
+    bottom: -12px;
+    left: 0;
 }
 
 .fog-overlay {
@@ -324,6 +724,32 @@ h1:focus {
     }
 }
 
+@keyframes fly-right-erratic {
+    0% {
+        transform: scale(0.3) translateX(-10vw) translateY(0);
+    }
+
+    15% {
+        transform: scale(0.4) translateX(15vw) translateY(-2vh);
+    }
+    /* Чуть выше */
+    30% {
+        transform: scale(0.5) translateX(30vw) translateY(1vh);
+    }
+    /* Чуть ниже */
+    50% {
+        transform: scale(0.6) translateX(50vw) translateY(-3vh);
+    }
+    /* Еще выше */
+    75% {
+        transform: scale(0.6) translateX(80vw) translateY(2vh);
+    }
+    /* Ниже */
+    100% {
+        transform: scale(0.6) translateX(120vw) translateY(0);
+    }
+    /* За экран */
+}
 @keyframes drop {
     0% {
         transform: translateY(-50px);
@@ -336,6 +762,101 @@ h1:focus {
     }
 }
 
+@keyframes fly-cycle {
+    100% {
+        background-position: -900px 0;
+    }
+}
+
+@keyframes fadeInEffect {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fly-right-one {
+    0% {
+        transform: scale(0.3) translateX(-10vw);
+    }
+
+    10% {
+        transform: translateY(2vh) translateX(10vw) scale(0.4);
+    }
+
+    20% {
+        transform: translateY(0vh) translateX(30vw) scale(0.5);
+    }
+
+    30% {
+        transform: translateY(4vh) translateX(50vw) scale(0.6);
+    }
+
+    40% {
+        transform: translateY(2vh) translateX(70vw) scale(0.6);
+    }
+
+    50% {
+        transform: translateY(0vh) translateX(90vw) scale(0.6);
+    }
+
+    60% {
+        transform: translateY(0vh) translateX(110vw) scale(0.6);
+    }
+
+    100% {
+        transform: translateY(0vh) translateX(110vw) scale(0.6);
+    }
+}
+
+@keyframes cloud-drift {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(calc(100vw + 350px));
+    }
+}
+@keyframes lightning-strike {
+    0% {
+        opacity: 0;
+        transform: scaleY(0);
+    }
+
+    10% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+
+    20% {
+        opacity: 0.3;
+    }
+
+    30% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: scaleY(1);
+    }
+}
+
+@keyframes bird-fly {
+    0% {
+        left: -100px;
+    }
+
+    100% {
+        left: 120vw;
+    }
+}
 @keyframes chaotic-bite {
     0%, 100% {
         transform: translateY(30px) rotate(0deg);
@@ -403,32 +924,12 @@ h1:focus {
     }
 }
 
-.night-theme .volume-label, 
-.night-theme .mud-input-label, 
-.night-theme .mud-input-root,
-.night-theme .settings-panel h6, 
-.night-theme .mud-checkbox .mud-typography,
-.night-theme .timer-text { 
-    color: #ffffff !important;
-}
+@keyframes bird-fly {
+    from {
+        transform: translateX(-50px);
+    }
 
-.night-theme .mud-input-outlined-border {
-    border-color: rgba(255, 255, 255, 0.3) !important;
-}
-
-.night-theme .mud-icon-root {
-    color: rgba(255, 255, 255, 0.7) !important;
-}
-
-.blazor-error-boundary,
-.blazor-error-boundary .mud-typography,
-.blazor-error-boundary b,
-.blazor-error-boundary span {
-    background-color: #fff9c4 !important; 
-    color: #ef6c00 !important;
-    background-image: url(data:image/svg+xml;base64,...) !important;
-}
-.blazor-error-boundary .mud-button-filled {
-    background-color: #ffa000 !important;
-    color: #ffffff !important;
+    to {
+        transform: translateX(110vw);
+    }
 }

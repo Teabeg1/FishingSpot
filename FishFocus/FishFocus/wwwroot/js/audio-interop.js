@@ -1,4 +1,5 @@
 ﻿window.audioInterop = {
+
     play: function (id) {
         var audio = document.getElementById(id);
         if (audio) {
@@ -40,4 +41,16 @@
             el.select();
         }
     }
+};
+
+window.playTickSound = function () {
+    const audio = new Audio('/audio/sound-time.mp3');
+    audio.currentTime = 0;
+    audio.play().catch(e => console.log(e));
+};
+
+window.playOneShot = function (src) {
+    const audio = new Audio(src);
+    audio.currentTime = 0;
+    audio.play().catch(e => console.log(e));
 };
