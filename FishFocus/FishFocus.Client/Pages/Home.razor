@@ -456,7 +456,7 @@ private async Task RunContinuousBirdsLoop()
                 _activeBirds.Remove(bird);
                 await InvokeAsync(StateHasChanged);
             });
-        }
+        } 
         
         await InvokeAsync(StateHasChanged);
         await Task.Delay(rnd.Next(10000, 25000));
