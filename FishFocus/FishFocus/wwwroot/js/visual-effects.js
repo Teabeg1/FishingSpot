@@ -1,17 +1,18 @@
 ﻿window.visualEffects = {
-    createRipple: function (containerSelector, x, y) {
-        console.log("Клик зафиксирован в:", x, y);
-        const container = document.querySelector(containerSelector);
-        if (!container) {
-            console.error("Контейнер не найден!");
-            return;
-        }
+    createRipple: function (selector, clientX, clientY) {
+        const container = document.querySelector(selector);
+        if (!container) return;
 
-        const ripple = document.createElement('div');
-        ripple.className = 'click-ripple';
+        const rect = container.getBoundingClientRect();
 
-        ripple.style.left = x + 'px';
-        ripple.style.top = y + 'px';
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        const ripple = document.createElement("div");
+        ripple.className = "click-ripple";
+
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
 
         container.appendChild(ripple);
 

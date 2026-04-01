@@ -24,13 +24,12 @@ h1:focus {
     outline: none;
 }
 
-
 .night-theme .volume-label,
 .night-theme .mud-input-label,
 .night-theme .mud-input-root,
 .night-theme .settings-panel h6,
 .night-theme .mud-checkbox .mud-typography,
-.night-theme .timer-text {
+.night-theme {
     color: #ffffff !important;
 }
 
@@ -43,8 +42,16 @@ h1:focus {
 }
 
 .mud-snackbar {
-    transition: opacity 0ms !important;
-    animation-duration: 0ms !important;
+    pointer-events: none !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    transition: opacity 300ms !important;
+}
+
+.mud-snackbar button,
+.mud-snackbar .mud-button-root,
+.mud-snackbar .mud-icon-button {
+    pointer-events: auto !important;
+    cursor: pointer !important;
 }
 
 .blazor-error-boundary,
@@ -56,13 +63,25 @@ h1:focus {
     background-image: url(data:image/svg+xml;base64,...) !important;
 }
 
-    .blazor-error-boundary .mud-button-filled {
-        background-color: #ffa000 !important;
-        color: #ffffff !important;
-    }
+.blazor-error-boundary .mud-button-filled {
+    background-color: #ffa000 !important;
+    color: #ffffff !important;
+}
 
 .validation-message {
     color: #e50000;
+}
+
+.lightning-flash, .lightning-container {
+    z-index: 60;
+}
+
+.progress-container {
+    z-index: 200;
+}
+
+.settings-panel {
+    z-index: 300;
 }
 
 .lightning-flash {
@@ -96,10 +115,38 @@ h1:focus {
     z-index: 10;
 }
 .birds-visual-area {
-    z-index: 150;
+    z-index: 50;
 }
 .birds-visual-area, .action-button {
     animation: fadeInEffect 1.5s ease-in-out forwards;
+}
+
+.timer-text {
+    font-size: 8rem;
+    font-weight: bold;
+    z-index: 210;
+    margin: 0 !important;
+    margin-top: -20px;
+    line-height: 0.9;
+    pointer-events: none !important;
+}
+
+.quote-area {
+    margin: 0 !important;
+    padding: 0;
+    text-align: center;
+    z-index: 200;
+    pointer-events: none !important;
+}
+
+.action-button {
+    border-radius: 12px !important;
+    text-transform: none !important;
+    font-weight: 600 !important;
+    padding: 10px 24px !important;
+    z-index: 220;
+    margin: 0 !important;
+    pointer-events: auto !important;
 }
 
 .bird {
@@ -111,7 +158,7 @@ h1:focus {
     will-change: background-position;
     animation-name: fly-cycle;
     animation-timing-function: steps(10);
-    animation-iteration-count: infinite; /* Всегда машут крыльями */
+    animation-iteration-count: infinite;
 }
 
 .bird-one {
@@ -136,14 +183,12 @@ h1:focus {
 
 .bird-container {
     position: absolute;
-    /* Начальная позиция за левым краем, top задаем в C# */
-    left: -10%;
-    transform: scale(0) translateX(-10vw);
-    will-change: transform;
+    left: -20%;
+    will-change: left, transform;
     animation-name: fly-right-erratic;
     animation-timing-function: linear;
-    animation-iteration-count: 1; /* Пролететь только один раз */
-    animation-fill-mode: forwards; /* Остаться за экраном до удаления */
+    animation-iteration-count: 1;
+    animation-fill-mode: forwards;
 }
 
 .bird-container-one {
@@ -170,26 +215,24 @@ h1:focus {
     position: absolute;
     background: rgba(255, 255, 255, 0.6);
     border-radius: 50px;
-    animation: cloud-drift linear infinite;
-    will-change: transform;
     filter: blur(5px);
 }
-    .cloud::after, .cloud::before {
-        content: '';
-        position: absolute;
-        background: inherit;
-        border-radius: 50%;
-    }
-
-.cloud-1 {
-    width: 200px;
-    height: 60px;
-    top: 10%;
-    left: -250px;
-    animation-duration: 120s;
-    opacity: 0.8;
+.cloud::after, .cloud::before {
+    content: '';
+    position: absolute;
+    background: inherit;
+    border-radius: 50%;
 }
 
+.fly-right {
+    left: -20%;
+    animation-name: fly-right-erratic;
+}
+
+.fly-left {
+    left: 120%;
+    animation-name: fly-left-erratic;
+}
 .cloud-1::after {
     width: 100px;
     height: 100px;
@@ -204,17 +247,6 @@ h1:focus {
     left: 100px;
 }
 
-.cloud-2 {
-    width: 150px;
-    height: 50px;
-    top: 25%;
-    left: -200px;
-    animation-duration: 90s;
-    animation-delay: 30s;
-    opacity: 0.5;
-    transform: scale(0.7);
-}
-
 .cloud-2::after {
     width: 80px;
     height: 80px;
@@ -222,13 +254,27 @@ h1:focus {
     left: 20px;
 }
 
+.cloud-1, .cloud-2, .cloud-3 {
+    position: absolute;
+    will-change: left;
+}
+
+.cloud-1 {
+    width: 200px;
+    height: 60px;
+    opacity: 0.8;
+}
+
+.cloud-2 {
+    width: 150px;
+    height: 50px;
+    opacity: 0.5;
+    transform: scale(0.7);
+}
+
 .cloud-3 {
     width: 250px;
     height: 70px;
-    top: 15%;
-    left: -300px;
-    animation-duration: 150s;
-    animation-delay: 60s;
     opacity: 0.7;
 }
 
@@ -270,18 +316,23 @@ h1:focus {
 
 .time-box {
     position: relative;
-    padding: 0; 
+    padding: 0;
     overflow: hidden;
-    height: 100px; 
+    height: 110px;
+    width: 100px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    transition: background 0.3s ease;
+    cursor: pointer;
 }
-
 
 .time-zone {
     width: 100%;
     display: flex;
-    align-items: center;
     justify-content: center;
-    transition: background 0.2s ease;
+    align-items: center;
+    transition: background 0.2s;
 }
 
 .time-zone.top,
@@ -293,6 +344,14 @@ h1:focus {
     height: 60%;
 }
 
+.time-box:hover {
+    background: rgba(255, 255, 255, 0.15); 
+    transform: translateY(-2px);
+}
+
+.night-theme .time-box:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
 .time-box:hover .time-zone.top, 
 .time-box:hover .time-zone.bottom {
     opacity: 1;
@@ -303,42 +362,53 @@ h1:focus {
 }
 
 .time-value {
-    font-size: 1.8rem;
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1;
+    text-align: center;
 }
+
 .time-box:hover {
     border-color: var(--mud-palette-primary);
     background: rgba(255, 255, 255, 0.15);
 }
 
+.time-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
 .time-value {
-    font-size: 2rem;
-    font-weight: bold;
+    font-size: 2.2rem;
+    font-weight: 800;
     line-height: 1;
 }
 
 .time-label {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
     opacity: 0.5;
-    bottom: 20px;
-    position: absolute;
-    pointer-events: none;
+    margin-top: 4px;
 }
 
 .time-input-hidden {
     position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     background: #2c3e50;
     color: white;
+    text-align: center;
+    font-size: 1.8rem;
     border: 2px solid var(--mud-palette-primary);
     border-radius: 10px;
-    text-align: center;
-    font-size: 1.5rem;
-    outline: none;
     z-index: 10;
+    outline: none;
 }
-
 .time-input-hidden::-webkit-outer-spin-button,
 .time-input-hidden::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -385,25 +455,57 @@ h1:focus {
         color: #ecf0f1;
     }
 
+.night-theme .bird {
+    filter: invert(34%) sepia(55%) saturate(427%) hue-rotate(141deg) brightness(15%) contrast(120%) !important;
+}
+
+.night-theme .cloud {
+    background: rgba(50, 70, 100, 0.4) !important;
+    filter: blur(8px) brightness(0.3) !important;
+    box-shadow: none !important;
+}
+
+.night-theme .rain-drop {
+    background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(150,180,255,0.4) 100%) !important;
+}
+
+.settings-panel .mud-icon-button {
+    margin-left: 4px;
+    transition: transform 0.2s ease;
+}
+
+    .settings-panel .mud-icon-button:hover {
+        transform: scale(1.1);
+    }
 
 .fishing-ui-group {
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* Это значение опускает панель ниже. 
-       Можешь менять 100px на 150px, если хочешь еще ниже */
-    margin-top: 200px;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 35vh;
+    z-index: 250;
     width: 100%;
-    z-index: 200; /* Чтобы кнопки всегда были кликабельны */
+}
+
+#lake-container {
+    cursor: url('data:image/svg+xml;utf8,<svg ...>...</svg>'), auto;
 }
 
 .lake-area {
+    cursor: default;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    z-index: 1;
+    background: linear-gradient(to bottom, #82caff 0%, #82caff 50%, #3d85c6 50%, #1e4d7b 100%);
 }
 
 .settings-panel {
@@ -453,18 +555,16 @@ h1:focus {
     border-color: rgba(255, 255, 255, 0.1);
 }
 
-/* 1. Весь контейнер (желтая рамка) */
 .test-tools-container {
-    padding: 12px !important; /* Внутренние отступы (сделай меньше, если хочешь сжать блок) */
+    padding: 12px !important;
     margin: 10px auto !important;
-    max-width: 280px; /* Ограничение ширины всей панели */
+    max-width: 280px;
 }
 
-/* 3. Кнопка "СКИПНУТЬ" */
 .test-tools-button {
-    height: 32px !important; /* Высота кнопки (сделай меньше, например 28px) */
-    font-size: 0.7rem !important; /* Размер текста внутри кнопки */
-    min-width: 180px !important; /* Ширина кнопки */
+    height: 32px !important;
+    font-size: 0.7rem !important;
+    min-width: 180px !important;
 }
 
 .score-icon-box {
@@ -504,19 +604,39 @@ h1:focus {
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-
-
-
-.timer-text {
-    font-size: 8rem;
-    font-weight: bold;
+.water-click-zone {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
     z-index: 10;
-    margin-top: -20px;
+    background: transparent;
+    pointer-events: auto !important;
+    cursor: pointer;
 }
 
+.fishing-ui-group,
+.clouds-visual-area,
+.birds-visual-area,
+.rain-overlay,
+.lightning-container,
+.quote-area,
+.progress-container,
+.timer-text,
 .italic-quote {
-    font-style: italic;
-    opacity: 0.8;
+    pointer-events: none !important;
+}
+
+.action-button,
+.time-box,
+.settings-panel,
+.mud-button-root,
+.mud-icon-button,
+.mud-switch,
+.mud-slider,
+.water-click-zone {
+    pointer-events: auto !important;
 }
 
 .fishing-scene {
@@ -528,13 +648,62 @@ h1:focus {
     align-items: center;
 }
 
-.water-line {
-    position: absolute;
-    bottom: 40px;
-    width: 150px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+
+.night-theme .lake-area {
+    background: linear-gradient(to bottom, #0f172a 0%,
+    #0f172a 50%,
+    #011627 50%,
+    #000814 100%
+    ) !important;
+}
+
+.night-theme .italic-quote {
+    color: rgba(255, 255, 255, 0.9) !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.night-theme .action-button {
+    background-color: #424242 !important;
+    color: #ffffff !important;
+    border: 1px solid #616161 !important;
+    transition: background-color 0.3s ease;
+}
+
+    .night-theme .action-button:hover {
+        background-color: #616161 !important;
+    }
+
+.night-theme .bobber {
+    box-shadow: 0 0 15px rgba(244, 67, 54, 0.6);
+}
+
+.day-theme .action-button.mud-button-filled-error {
+    background-color: #ef5350 !important;
+    color: #ffffff !important;
+    transition: all 0.3s ease;
+}
+
+    .day-theme .action-button.mud-button-filled-error:hover {
+        background-color: #e53935 !important;
+        box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3); 
+    }
+
+.day-theme .italic-quote {
+    color: #ffffff !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
+    font-weight: 500; 
+}
+
+.italic-quote {
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    font-style: italic;
+    opacity: 0.9;
+}
+
+.night-theme .timer-text {
+    color: #ffffff !important;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
 }
 
 .bobber {
@@ -586,54 +755,52 @@ h1:focus {
     animation: raise 0.5s ease-in forwards;
 }
 
+
 .click-ripple {
     position: absolute;
-    z-index: 99;
     width: 2px;
     height: 2px;
-    border: 3px solid white !important;
+    border: 2px solid rgba(255, 255, 255, 0.6);
     border-radius: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
-    animation: ripple-spread 1s ease-out forwards;
+    z-index: 5;
+    animation: ripple-spread 0.8s ease-out forwards;
 }
-
 .rain-overlay {
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 200;
+    z-index: 150;
     overflow: hidden;
     opacity: 0;
-    transition: opacity 2s ease-in-out;
+    transition: opacity 1.5s ease-in-out;
 }
 
 .rain-active {
-    opacity: 1;
+    opacity: 1 !important;
 }
 
 .rain-drop {
     position: absolute;
     width: 2px;
     height: 45px;
-    background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
+    background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 100%);
     top: -60px;
+    will-change: transform;
     animation: rain-fall linear infinite;
-    box-shadow: 0 0 2px rgba(255,255,255,0.4);
+    box-shadow: 0 0 2px rgba(0,0,0,0.1);
 }
-
 .setting-block {
     display: flex;
-    align-items: center; 
-    justify-content: b;
+    align-items: center;
+    justify-content: space-between;
     min-height: 48px;
     margin-bottom: 12px;
-    gap: 10px; 
+    gap: 10px;
 }
 
 .setting-block .mud-switch {
@@ -645,17 +812,22 @@ h1:focus {
 .slider-wrapper {
     flex-grow: 1;
     opacity: 0;
-    pointer-events: none;
-    transform: translateX(10px);
-    transition: all 0.3s ease-in-out;
     visibility: hidden;
+    transform: translateX(10px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .slider-wrapper.is-visible {
     opacity: 1;
-    pointer-events: auto;
-    transform: translateX(0);
     visibility: visible;
+    transform: translateX(0);
+}
+
+.mud-slider {
+    width: 100%;
 }
 
 .slider-wrapper .mud-slider {
@@ -679,7 +851,7 @@ h1:focus {
     background: rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(4px);
     pointer-events: none;
-    z-index: 95;
+    z-index: 100;
     opacity: 0;
     transition: opacity 2s ease;
 }
@@ -724,31 +896,80 @@ h1:focus {
     }
 }
 
+@keyframes fly-right {
+    0% {
+        transform: translateX(-10%);
+    }
+    100% {
+        transform: translateX(110vw);
+    }
+}
+
 @keyframes fly-right-erratic {
     0% {
-        transform: scale(0.3) translateX(-10vw) translateY(0);
+        left: -20%;
+        transform: scale(0.3) translateY(0);
     }
 
-    15% {
-        transform: scale(0.4) translateX(15vw) translateY(-2vh);
-    }
-    /* Чуть выше */
     30% {
-        transform: scale(0.5) translateX(30vw) translateY(1vh);
+        transform: scale(0.5) translateY(-3vh);
     }
-    /* Чуть ниже */
-    50% {
-        transform: scale(0.6) translateX(50vw) translateY(-3vh);
+
+    60% {
+        transform: scale(0.6) translateY(3vh);
     }
-    /* Еще выше */
-    75% {
-        transform: scale(0.6) translateX(80vw) translateY(2vh);
-    }
-    /* Ниже */
+
     100% {
-        transform: scale(0.6) translateX(120vw) translateY(0);
+        left: 125%;
+        transform: scale(0.6) translateY(0);
     }
-    /* За экран */
+}
+
+@keyframes fly-left-erratic {
+    0% {
+        left: 120%;
+        transform: scaleX(-1) scale(0.3) translateY(0);
+    }
+
+    30% {
+        transform: scaleX(-1) scale(0.5) translateY(-3vh);
+    }
+
+    60% {
+        transform: scaleX(-1) scale(0.6) translateY(3vh);
+    }
+
+    100% {
+        left: -25%;
+        transform: scaleX(-1) scale(0.6) translateY(0);
+    }
+}
+@keyframes drift-right {
+    from {
+        left: -25vw;
+    }
+
+    to {
+        left: 120vw;
+    }
+}
+
+@keyframes drift-left {
+    from {
+        left: 120vw;
+    }
+
+    to {
+        left: -25vw;
+    }
+}
+
+.drift-right {
+    animation: drift-right linear infinite;
+}
+
+.drift-left {
+    animation: drift-left linear infinite;
 }
 @keyframes drop {
     0% {
@@ -814,13 +1035,9 @@ h1:focus {
     }
 }
 
-@keyframes cloud-drift {
-    from {
-        transform: translateX(0);
-    }
-
+@keyframes cloud-drift-random {
     to {
-        transform: translateX(calc(100vw + 350px));
+        left: var(--end-left);
     }
 }
 @keyframes lightning-strike {
@@ -888,14 +1105,15 @@ h1:focus {
 }
 
 @keyframes rain-fall {
-    0% {
+    from {
         transform: translateY(0);
     }
 
-    100% {
+    to {
         transform: translateY(110vh);
     }
 }
+
 
 @keyframes ripple-spread {
     0% {
@@ -905,7 +1123,7 @@ h1:focus {
     }
 
     100% {
-        width: 100px;
+        width: 120px;
         height: 40px;
         opacity: 0;
         border-width: 1px;
