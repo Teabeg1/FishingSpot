@@ -1,19 +1,26 @@
 ﻿@using System.ComponentModel.DataAnnotations
+@using FishFocus.Shared.DTOs.Auth
+@using FishFocus.Client.Services
 @using MudBlazor
+@inject AuthApiService AuthApi
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
         <MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
             <MudTabPanel Text="Вход">
                 <MudForm @ref="loginForm">
-                    <MudTextField T="string" Label="Логин или Email" Required="true" 
-                                  Variant="Variant.Outlined" Class="mb-4" @bind-Value="loginModel.Username" />
+                    <MudTextField T="string" Label="Email" Required="true" 
+                                  Variant="Variant.Outlined" Class="mb-4" @bind-Value="loginModel.Email" />
                     <MudTextField T="string" Label="Пароль" InputType="InputType.Password" 
                                   Required="true" Variant="Variant.Outlined" @bind-Value="loginModel.Password" />
-                    
+
                     <div class="d-flex justify-center mt-6">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" 
-                                   OnClick="HandleLogin" FullWidth="true">ВОЙТИ</MudButton>
+                                   OnClick="HandleLogin" FullWidth="true" Disabled="isLoading">
+                            @(isLoading ? "Загрузка..." : "ВОЙТИ")
+                        </MudButton>
                     </div>
                 </MudForm>
             </MudTabPanel>
@@ -25,11 +32,15 @@
                     <MudTextField T="string" Label="Email" Required="true" 
                                   Variant="Variant.Outlined" Class="mb-4" @bind-Value="regModel.Email" />
                     <MudTextField T="string" Label="Пароль" InputType="InputType.Password" 
-                                  Required="true" Variant="Variant.Outlined" @bind-Value="regModel.Password" />
-                    
+                                  Required="true" Variant="Variant.Outlined" Class="mb-4" @bind-Value="regModel.Password" />
+                    <MudTextField T="string" Label="Подтверждение пароля" InputType="InputType.Password" 
+                                  Required="true" Variant="Variant.Outlined" @bind-Value="regModel.ConfirmPassword" />
+
                     <div class="d-flex justify-center mt-6">
                         <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Large" 
-                                   OnClick="HandleRegister" FullWidth="true">СОЗДАТЬ АККАУНТ</MudButton>
+                                   OnClick="HandleRegister" FullWidth="true" Disabled="isLoading">
+                            @(isLoading ? "Загрузка..." : "СОЗДАТЬ АККАУНТ")
+                        </MudButton>
                     </div>
                 </MudForm>
             </MudTabPanel>
@@ -42,14 +53,70 @@
 
     private MudForm? loginForm;
     private MudForm? registerForm;
+    private bool isLoading = false;
 
-    private LoginDto loginModel = new();
-    private RegisterDto regModel = new();
+    private LoginRequest loginModel = new();
+    private RegisterRequest regModel = new();
 
-    // Пока это заглушки для фронта, потом здесь будет вызов
-    private void HandleLogin() => MudDialog.Close(DialogResult.Ok(loginModel));
-    private void HandleRegister() => MudDialog.Close(DialogResult.Ok(regModel));
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        try
+        {
+            var result = await AuthApi.LoginAsync(loginModel);
 
-    public class LoginDto { public string? Username { get; set; } public string? Password { get; set; } }
-    public class RegisterDto { public string? Username { get; set; } public string? Email { get; set; } public string? Password { get; set; } }
+            if (result is not null && result.Success)
+            {
+                await JS.InvokeVoidAsync("localStorage.setItem", "jwt_token", result.Token);
+                await JS.InvokeVoidAsync("localStorage.setItem", "username", result.Username);
+                Snackbar.Add($"Добро пожаловать, {result.Username}!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(result));
+            }
+            else
+            {
+                var errors = result?.Errors ?? new List<string> { "Неизвестная ошибка" };
+                foreach (var err in errors)
+                    Snackbar.Add(err, Severity.Error);
+            }
+        }
+        catch
+        {
+            Snackbar.Add("Ошибка подключения к серверу", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleRegister()
+    {
+        isLoading = true;
+        try
+        {
+            var result = await AuthApi.RegisterAsync(regModel);
+
+            if (result is not null && result.Success)
+            {
+                await JS.InvokeVoidAsync("localStorage.setItem", "jwt_token", result.Token);
+                await JS.InvokeVoidAsync("localStorage.setItem", "username", result.Username);
+                Snackbar.Add($"Аккаунт создан! Добро пожаловать, {result.Username}!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(result));
+            }
+            else
+            {
+                var errors = result?.Errors ?? new List<string> { "Неизвестная ошибка" };
+                foreach (var err in errors)
+                    Snackbar.Add(err, Severity.Error);
+            }
+        }
+        catch
+        {
+            Snackbar.Add("Ошибка подключения к серверу", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
 }
