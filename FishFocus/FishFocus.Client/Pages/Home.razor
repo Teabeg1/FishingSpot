@@ -9,6 +9,9 @@
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 @inject IDialogService DialogService
+@using FishFocus.Shared.DTOs.Profile
+@using System.Net.Http.Json
+@using System.Net.Http.Headers
 
 <MudThemeProvider />
 <MudDialogProvider />
@@ -162,10 +165,9 @@
             </div>
         </div>
 <div class="setting-block">
-        <MudSwitch @bind-Value="isNightMode" Label="Ночной режим" Color="Color.Secondary" 
-                   Disabled="@(!_isAppReady)" />
-    </div>
-    
+    <MudSwitch Value="isNightMode" T="bool" ValueChanged="ToggleNightMode" 
+               Label="Ночной режим" Color="Color.Secondary" Disabled="@(!_isAppReady)" />
+</div>    
 <div class="setting-block">
         <MudSwitch Value="isRadioEnabled" T="bool" ValueChanged="ToggleRadio" Label="Радио" 
                    Disabled="@(!_isAppReady)" Color="Color.Secondary" />
@@ -191,11 +193,11 @@
     </div>
 
     <div class="setting-block">
-        <MudSwitch @bind-Value="playFog" Label="Туман" Color="Color.Info" 
-                   Disabled="@(!_isAppReady)" />
+    <MudSwitch Value="playFog" T="bool" ValueChanged="ToggleFog" 
+               Label="Туман" Color="Color.Info" Disabled="@(!_isAppReady)" />
     </div>
 
-        <div class="score-display-panel mb-2">
+    <div class="score-display-panel mb-2">
             <div class="score-icon-box">
                 <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" Size="Size.Medium" />
             </div>
@@ -306,7 +308,17 @@
 
 
 
+private async Task ToggleNightMode(bool value)
+{
+    isNightMode = value;
+    await SaveUserSettings();
+}
 
+private async Task ToggleFog(bool value)
+{
+    playFog = value;
+    await SaveUserSettings();
+}
 
 
 
@@ -341,6 +353,7 @@
         {
             await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", 0);
         }
+        await SaveUserSettings();
     }
 
     private bool isThunderEnabled = false;
@@ -399,48 +412,46 @@
 
 private List<BirdData> _activeBirds = new(); // Список летящих птиц
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (firstRender)
     {
-        // Выполняем только один раз при самой первой отрисовке в браузере
-        if (firstRender)
-        {
+        // Сначала загружаем настройки пользователя
+        await LoadUserSettings();
+
+        // Небольшая задержка для плавного появления (ваша логика)
         await Task.Delay(3000);
         _isAppReady = true;
 
-        // ЗАПУСКАЕМ ПТИЦ (Они летают всегда)
+        // Запускаем цикл птиц
         _ = RunContinuousBirdsLoop();
-
+        
+        // Уведомляем систему, что состояние изменилось
         await InvokeAsync(StateHasChanged);
-        }
     }
+}
 
-
-    private async Task RunContinuousBirdsLoop()
+private async Task RunContinuousBirdsLoop()
 {
     var rnd = new Random();
     string[] birdClasses = { "bird-one", "bird-two", "bird-three", "bird-four" };
 
-    while (true) // Летают, пока открыта программа
+    while (true)
     {
-        // Генерируем стаю от 2 до 4 птиц
         int count = rnd.Next(2, 5);
-        
-        // ЧТОБЫ ЛЕТЕЛИ ВЫШЕ: Диапазон Top от 5% до 15% от верха экрана (раньше было до 30%)
-        int baseTop = rnd.Next(5, 16); 
+        int baseTop = rnd.Next(5, 16);
 
         for (int i = 0; i < count; i++)
         {
             var bird = new BirdData
             {
                 BirdClass = birdClasses[rnd.Next(birdClasses.Length)],
-                Top = baseTop + rnd.Next(-3, 4), // Небольшой разброс высоты внутри стаи
-                Speed = 15.0 + rnd.NextDouble() * 5.0, // Время пролета (15-20 сек)
-                Delay = i * 0.7 // Задержка, чтобы летели клином/цепочкой
+                Top = baseTop + rnd.Next(-3, 4),
+                Speed = 15.0 + rnd.NextDouble() * 5.0,
+                Delay = i * 0.7
             };
-            
             _activeBirds.Add(bird);
             
-            // Удаляем птицу из списка, когда она гарантированно улетела (Speed + Delay + запас)
             _ = Task.Delay((int)((bird.Speed + bird.Delay) * 1000) + 2000).ContinueWith(async t => {
                 _activeBirds.Remove(bird);
                 await InvokeAsync(StateHasChanged);
@@ -448,12 +459,90 @@ private List<BirdData> _activeBirds = new(); // Список летящих пт
         }
         
         await InvokeAsync(StateHasChanged);
-        
-        // Пауза между стаями (10-25 секунд)
         await Task.Delay(rnd.Next(10000, 25000));
     }
 }
+    private async Task LoadUserSettings()
+{
+    var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
+    if (string.IsNullOrEmpty(token)) return;
 
+    Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+    try
+    {
+        var profile = await Http.GetFromJsonAsync<UserProfileDto>("api/profile");
+        if (profile is null) return;
+
+        isNightMode = profile.IsNightMode;
+        playFog = profile.PlayFog;
+        isRadioEnabled = profile.IsRadioEnabled;
+        radioVolume = profile.RadioVolume;
+        isRainEnabled = profile.IsRainEnabled;
+        rainVolume = profile.RainVolume;
+
+        StateHasChanged();
+
+        // Применяем загруженные настройки звука к элементам DOM
+        if (isRadioEnabled)
+        {
+            if (!isRadioInitialized)
+            {
+                currentTrackIndex = Random.Shared.Next(1, 11);
+                currentTrackUrl = $"audio/radio/track{currentTrackIndex}.mp3";
+                isRadioInitialized = true;
+                StateHasChanged();
+                await Task.Delay(300);
+                await JS.InvokeVoidAsync("audioInterop.play", "radio-audio");
+                double randomStartTime = Random.Shared.Next(10, 60);
+                await JS.InvokeVoidAsync("audioInterop.setCurrentTime", "radio-audio", randomStartTime);
+            }
+            await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", radioVolume);
+        }
+
+        if (isRainEnabled)
+        {
+            // Инициализация капель дождя, если он включен
+            var rnd = new Random();
+            _rainDrops = Enumerable.Range(0, 60).Select(_ => new RainDropData
+            {
+                Left = rnd.NextDouble() * 100,
+                Delay = rnd.NextDouble() * 2,
+                Duration = 0.6 + rnd.NextDouble() * 0.4
+            }).ToList();
+            isRainInDom = true;
+            isRainAnimationActive = true;
+
+            await JS.InvokeVoidAsync("audioInterop.play", "rain-audio");
+            await JS.InvokeVoidAsync("audioInterop.setVolume", "rain-audio", rainVolume);
+        }
+    }
+    catch { }
+}
+
+private async Task SaveUserSettings()
+{
+    var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
+    if (string.IsNullOrEmpty(token)) return;
+
+    Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+    var settings = new UpdateSettingsRequest
+    {
+        IsNightMode = isNightMode,
+        PlayFog = playFog,
+        IsRadioEnabled = isRadioEnabled,
+        RadioVolume = radioVolume,
+        IsRainEnabled = isRainEnabled,
+        RainVolume = rainVolume,
+    };
+
+    try
+    {
+        await Http.PutAsJsonAsync("api/profile/settings", settings);
+    }
+    catch { }
+}
     private bool _isBirdsLoopRunning = false;
 
     private async Task ToggleBirds(bool value)
@@ -495,6 +584,7 @@ private List<BirdData> _activeBirds = new(); // Список летящих пт
         radioVolume = value;
         int actualVolume = isRadioEnabled ? radioVolume : 0;
         await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", actualVolume);
+        await SaveUserSettings();
     }
 
     private async Task PlayNextTrack()
@@ -515,12 +605,12 @@ private List<BirdData> _activeBirds = new(); // Список летящих пт
         var dialog = await DialogService.ShowAsync<LoginDialog>("Личный кабинет", options);
         var result = await dialog.Result;
 
-        if (!result.Canceled)
+        if (result is not null && !result.Canceled)
         {
-            Snackbar.Add("Запрос отправлен бэкенд-бро!", Severity.Info);
+            await LoadUserSettings();
+            Snackbar.Add("Настройки синхронизированы!", Severity.Success);
         }
     }
-
     private int displayHours = 0;
     private int displayMinutes = 30;
     private bool isHoursInputMode = false;
@@ -724,7 +814,7 @@ private async Task FinishSession()
     timer?.Dispose();
     cts.Cancel();
     
-    try 
+try 
     {
         var response = await Http.GetFromJsonAsync<FishCatchResult>($"api/fishery/catch?minutes={selectedMinutes}");
         if (response != null) 
@@ -732,6 +822,14 @@ private async Task FinishSession()
             catchResult = response;
             TotalScore += response.TotalPoints;
             CatchHistory.Add(response);
+
+            // ОТПРАВКА ОЧКОВ НА СЕРВЕР
+            var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
+            if (!string.IsNullOrEmpty(token))
+            {
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                await Http.PostAsJsonAsync("api/profile/points", response.TotalPoints);
+            }
 
             var parameters = new DialogParameters { ["CatchResult"] = response, ["IsNight"] = isNightMode };
             var options = new DialogOptions { BackdropClick = false, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
@@ -743,7 +841,6 @@ private async Task FinishSession()
     _animationState = FishingAnimationState.None;
     StateHasChanged();
 }
-
     private void StopTimer()
     {
         isRunning = false;
@@ -785,6 +882,7 @@ private async Task FinishSession()
                 await JS.InvokeVoidAsync("audioInterop.pause", "rain-audio");
             }
         }
+        await SaveUserSettings();
         StateHasChanged();
     }
 
@@ -792,6 +890,7 @@ private async Task FinishSession()
     {
         rainVolume = value;
         await JS.InvokeVoidAsync("audioInterop.setVolume", "rain-audio", rainVolume);
+        await SaveUserSettings();
         StateHasChanged();
     }
 
