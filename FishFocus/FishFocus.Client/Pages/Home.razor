@@ -15,31 +15,47 @@
 
 <MudThemeProvider />
 <MudDialogProvider />
-<MudSnackbarProvider />
+<MudSnackbarProvider Configuration="@((SnackbarConfiguration config) => {
+    config.SnackbarVariant = Variant.Filled;
+    config.PositionClass = Defaults.Classes.Position.BottomLeft;
+    config.PreventDuplicates = true;
+    config.NewestOnTop = true;
+    config.ShowCloseIcon = true;
+})" />
 <PageTitle>Рыбалка</PageTitle>
 
 <div class="main-container @(isNightMode ? "night-theme" : "day-theme")"
     style="opacity: @(_isAppReady ? "1" : "0"); transition: opacity 0.8s ease-in-out;">
-    <div class="lake-area" id="lake-container" @onclick="HandleLakeClick">
-        
-        <div class="clouds-visual-area">
-            <div class="cloud cloud-1"></div>
-            <div class="cloud cloud-2"></div>
-            <div class="cloud cloud-3"></div>
+<div class="lake-area" id="lake-container"> 
+    
+<div class="water-click-zone" @onclick="HandleLakeClick" @onclick:stopPropagation></div>
+<div class="water-line"></div>
+<div class="clouds-visual-area">
+    @foreach (var cloud in _activeClouds)
+    {
+        <div class="cloud @cloud.Class @cloud.DirectionClass" 
+             style="top: @(cloud.Top)%; 
+                    animation-duration: @(cloud.Duration)s; 
+                    animation-delay: @(cloud.NegDelay.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))s;">
         </div>
-
-        <div class="fog-overlay @(playFog ? "fog-active" : "")"></div>
+    }
+</div>
+<div class="fog-overlay @(playFog ? "fog-active" : "")"></div>
         <div class="lightning-flash @(isLightningStrike ? "flash-active" : "")"></div>
         
         @if (_isAppReady)
             {
-                <div class="birds-visual-area">
-                    <div class="bird-container bird-container-one"><div class="bird bird-one"></div></div>
-                    <div class="bird-container bird-container-two"><div class="bird bird-two"></div></div>
-                    <div class="bird-container bird-container-three"><div class="bird bird-three"></div></div>
-                    <div class="bird-container bird-container-four"><div class="bird bird-four"></div></div>
-                </div>
-            }
+<div class="birds-visual-area">
+    @foreach (var bird in _activeBirds)
+    {
+        <div class="bird-container @(bird.IsFlyingRight ? "fly-right" : "fly-left")" 
+             style="top: @(bird.Top)%; animation-duration: @(bird.Speed.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))s; animation-delay: @(bird.Delay.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))s;"
+             @key="bird.Id">
+            <div class="bird @bird.BirdClass"></div>
+        </div>
+    }
+</div>
+}
 
         <div class="lightning-container">
             @foreach (var bolt in _activeBolts)
@@ -51,21 +67,24 @@
                 </svg>
             }
         </div>
+            @if (isRainInDom) 
+            {
+                <div class="rain-overlay @(isRainAnimationActive ? "rain-active" : "")" @key="@("rain-layer-v6")">
+                    @if (_rainDrops != null)
+                    {
+                        @foreach (var drop in _rainDrops)
+                        {
+                            <div class="rain-drop" 
+                                 style="left: @(drop.Left.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))%; 
+                                        animation-delay: @(drop.Delay.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))s; 
+                                        animation-duration: @(drop.Duration.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))s;">
+                            </div>
+                        }
+                    }
+                </div>
+            }
 
-        @if (isRainInDom) 
-        {
-            <div class="rain-overlay @(isRainAnimationActive ? "rain-active" : "")" @key="@("rain-layer-v4")">
-                @foreach (var drop in _rainDrops)
-                {
-                    <div class="rain-drop" 
-                         style="left: @(drop.Left.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))%; 
-                                animation-delay: @(drop.Delay.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))s; 
-                                animation-duration: @(drop.Duration.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))s;">
-                    </div>
-                }
-            </div>
-        }
-        <div class="fishing-ui-group">
+<div class="fishing-ui-group">
 <div class="progress-container">
             <MudProgressCircular Color="Color.Primary" Value="@_progressValue" Size="Size.Large" Thickness="2" Style="height:300px; width:300px;">
                 <ChildContent>
@@ -100,97 +119,115 @@
             }
             else
             {
-                <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="StopTimer" Class="action-button">
-                    Прервать рыбалку
-                </MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="StopTimer" Class="action-button">
+    Прервать рыбалку
+</MudButton>
             }
         }
     </div></div>
     <div class="settings-panel">
-        <div class="d-flex justify-space-between align-center mb-2">
-            <MudText Typo="Typo.h6">Настройки</MudText>
-            <MudIconButton Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" OnClick="OpenLoginDialog" />
-        </div>
+<div class="d-flex justify-space-between align-center mb-2">
+        <MudText Typo="Typo.h6">Настройки</MudText>
+<div class="d-flex">
+        <MudIconButton Icon="@Icons.Material.Filled.AccountCircle" 
+                       Color="Color.Inherit" 
+                       OnClick="OpenLoginDialog" 
+                       Title="Личный кабинет" />
+        
+        <MudIconButton Icon="@Icons.Material.Filled.Logout" 
+                       Color="Color.Error" 
+                       OnClick="Logout" 
+                       Title="Выйти" />
+    </div>    </div>
 
 <div class="time-picker-container mb-2">
-            <div class="time-box">
-                @* Часы: Вверх *@
-                <div class="time-zone top" @onmousedown='(e) => HandleZoneClick("hours", 1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
-                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Small" />
-                </div>
-                
-                @* Часы: Значение и Инпут *@
-                <div class="time-zone middle" @onclick='() => EnableInputMode("hours")'>
-                    @if (isHoursInputMode)
-                    {
-                        <input id="h-input-field" type="number" class="time-input-hidden" 
-                               value="@displayHours" 
-                               @onchange='(e) => ManualUpdate(e, "hours")' 
-                               @onblur='() => isHoursInputMode = false'
-                               @onkeydown="@(e => { if (e.Key == "Enter") isHoursInputMode = false; })" />
-                    }
-                    <span class="time-value">@displayHours</span>
-                    <span class="time-label">ч</span>
-                </div>
-
-                @* Часы: Вниз *@
-                <div class="time-zone bottom" @onmousedown='(e) => HandleZoneClick("hours", -1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
-                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" />
-                </div>
-            </div>
-
-            <div class="time-box">
-                @* Минуты: Вверх *@
-                <div class="time-zone top" @onmousedown='(e) => HandleZoneClick("minutes", 1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
-                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Small" />
-                </div>
-
-                @* Минуты: Значение и Инпут *@
-                <div class="time-zone middle" @onclick='() => EnableInputMode("minutes")'>
-                    @if (isMinutesInputMode)
-                    {
-                        <input id="m-input-field" type="number" class="time-input-hidden" 
-                               value="@displayMinutes" 
-                               @onchange='(e) => ManualUpdate(e, "minutes")' 
-                               @onblur='() => isMinutesInputMode = false' />
-                    }
-                    <span class="time-value">@displayMinutes.ToString("D2")</span>
-                    <span class="time-label">мин</span>
-                </div>
-
-                @* Минуты: Вниз *@
-                <div class="time-zone bottom" @onmousedown='(e) => HandleZoneClick("minutes", -1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
-                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" />
-                </div>
+    <div class="time-box">
+        <div class="time-zone top" @onmousedown='(e) => HandleZoneClick("hours", 1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
+            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Small" />
+        </div>
+        
+        <div class="time-zone middle" @onclick='() => EnableInputMode("hours")'>
+            @if (isHoursInputMode)
+            {
+                <input id="h-input-field" type="number" class="time-input-hidden" 
+                       value="@displayHours" 
+                       @onchange='(e) => ManualUpdate(e, "hours")' 
+                       @onblur='() => isHoursInputMode = false'
+                       @onkeydown="@(e => { if (e.Key == "Enter") isHoursInputMode = false; })" />
+            }
+            <div class="time-content-wrapper">
+                <span class="time-value">@displayHours</span>
+                <span class="time-label">ч</span>
             </div>
         </div>
-<div class="setting-block">
-    <MudSwitch Value="isNightMode" T="bool" ValueChanged="ToggleNightMode" 
-               Label="Ночной режим" Color="Color.Secondary" Disabled="@(!_isAppReady)" />
-</div>    
-<div class="setting-block">
-        <MudSwitch Value="isRadioEnabled" T="bool" ValueChanged="ToggleRadio" Label="Радио" 
-                   Disabled="@(!_isAppReady)" Color="Color.Secondary" />
-        <div class="slider-wrapper @(isRadioEnabled ? "is-visible" : "")">
-            <MudSlider T="int" Value="radioVolume" ValueChanged="UpdateRadioVolume" 
-                       Disabled="@(!_isAppReady)" Min="0" Max="100" />
+
+        <div class="time-zone bottom" @onmousedown='(e) => HandleZoneClick("hours", -1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
+            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" />
         </div>
+    </div>
+
+    <div class="time-box">
+        <div class="time-zone top" @onmousedown='(e) => HandleZoneClick("minutes", 1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
+            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Small" />
+        </div>
+
+        <div class="time-zone middle" @onclick='() => EnableInputMode("minutes")'>
+            @if (isMinutesInputMode)
+            {
+                <input id="m-input-field" type="number" class="time-input-hidden" 
+                       value="@displayMinutes" 
+                       @onchange='(e) => ManualUpdate(e, "minutes")' 
+                       @onblur='() => isMinutesInputMode = false' 
+                       @onkeydown="@(e => { if (e.Key == "Enter") isMinutesInputMode = false; })" />
+            }
+            <div class="time-content-wrapper">
+                <span class="time-value">@displayMinutes.ToString("D2")</span>
+                <span class="time-label">мин</span>
+            </div>
+        </div>
+
+        <div class="time-zone bottom" @onmousedown='(e) => HandleZoneClick("minutes", -1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
+            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" />
+        </div>
+    </div>
+</div>
+
+<div class="setting-block">
+        <MudSwitch Value="isNightMode" T="bool" ValueChanged="ToggleNightMode" Label="Ночной режим" Color="Color.Secondary" Disabled="@(!_isAppReady)" />
     </div>
     
-<div class="setting-block">
-        <MudSwitch Value="isRainEnabled" T="bool" ValueChanged="ToggleRain" Label="Дождь" 
-                   Disabled="@(!_isAppReady)" Color="Color.Info" />
+    <div class="setting-block">
+        <MudSwitch Value="isRadioEnabled" T="bool" ValueChanged="ToggleRadio" Label="Радио" Disabled="@(!_isAppReady)" Color="Color.Secondary" />
+        <div class="slider-wrapper @(isRadioEnabled ? "is-visible" : "")">
+            <MudSlider T="int" Value="radioVolume" ValueChanged="UpdateRadioVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Secondary" />
+            <span class="volume-label">Громкость: @radioVolume%</span>
+        </div>
     </div>
 
     <div class="setting-block">
-        <MudSwitch Value="isThunderEnabled" T="bool" ValueChanged="ToggleThunder" Label="Гром" 
-                   Disabled="@(!_isAppReady)" Color="Color.Warning" />
+        <MudSwitch Value="isRainEnabled" T="bool" ValueChanged="ToggleRain" Label="Дождь" Disabled="@(!_isAppReady)" Color="Color.Info" />
+        <div class="slider-wrapper @(isRainEnabled ? "is-visible" : "")">
+            <MudSlider T="int" Value="rainVolume" ValueChanged="UpdateRainVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Info" />
+            <span class="volume-label">Громкость: @rainVolume%</span>
+        </div>
     </div>
 
     <div class="setting-block">
-        <MudSwitch Value="isBirdsEnabled" T="bool" ValueChanged="ToggleBirds" Label="Птицы" 
-                   Disabled="@(!_isAppReady)" Color="Color.Success" />
+        <MudSwitch Value="isThunderEnabled" T="bool" ValueChanged="ToggleThunder" Label="Гром" Disabled="@(!_isAppReady)" Color="Color.Warning" />
+        <div class="slider-wrapper @(isThunderEnabled ? "is-visible" : "")">
+            <MudSlider T="int" Value="thunderVolume" ValueChanged="UpdateThunderVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Warning" />
+            <span class="volume-label">Громкость: @thunderVolume%</span>
+        </div>
     </div>
+
+    <div class="setting-block">
+        <MudSwitch Value="isBirdsEnabled" T="bool" ValueChanged="ToggleBirds" Label="Птицы" Disabled="@(!_isAppReady)" Color="Color.Success" />
+        <div class="slider-wrapper @(isBirdsEnabled ? "is-visible" : "")">
+            <MudSlider T="int" Value="birdsVolume" ValueChanged="UpdateBirdsVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Success" />
+            <span class="volume-label">Громкость: @birdsVolume%</span>
+        </div>
+    </div>
+
 
     <div class="setting-block">
     <MudSwitch Value="playFog" T="bool" ValueChanged="ToggleFog" 
@@ -305,22 +342,17 @@
         catch (TaskCanceledException) { }
     }
 
+    private async Task ToggleNightMode(bool value)
+    {
+        isNightMode = value;
+        await SaveUserSettings();
+    }
 
-
-
-private async Task ToggleNightMode(bool value)
-{
-    isNightMode = value;
-    await SaveUserSettings();
-}
-
-private async Task ToggleFog(bool value)
-{
-    playFog = value;
-    await SaveUserSettings();
-}
-
-
+    private async Task ToggleFog(bool value)
+    {
+        playFog = value;
+        await SaveUserSettings();
+    }
 
     private async Task ToggleRadio(bool value)
     {
@@ -328,31 +360,32 @@ private async Task ToggleFog(bool value)
 
         if (isRadioEnabled)
         {
-            try 
+            if (string.IsNullOrEmpty(currentTrackUrl))
             {
-                if (!isRadioInitialized)
-                {
-                    currentTrackIndex = Random.Shared.Next(1, 11);
-                    currentTrackUrl = $"audio/radio/track{currentTrackIndex}.mp3";
-                    isRadioInitialized = true;
-                    StateHasChanged();
-                    await Task.Delay(300);
-                    await JS.InvokeVoidAsync("audioInterop.play", "radio-audio");
-                    double randomStartTime = Random.Shared.Next(10, 60); 
-                    await JS.InvokeVoidAsync("audioInterop.setCurrentTime", "radio-audio", randomStartTime);
-                }
-                await UpdateRadioVolume(radioVolume);
+                currentTrackIndex = Random.Shared.Next(1, 11);
+                currentTrackUrl = $"audio/radio/track{currentTrackIndex}.mp3";
+                StateHasChanged();
+                await Task.Delay(300);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка радио: {ex.Message}");
 
+            await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", radioVolume);
+
+            if (!isRadioInitialized)
+            {
+                double randomStartTime = Random.Shared.Next(15, 75);
+                await JS.InvokeVoidAsync("audioInterop.forceRadioStart", "radio-audio", randomStartTime);
+                isRadioInitialized = true;
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("audioInterop.play", "radio-audio");
             }
         }
         else
         {
-            await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", 0);
+            await JS.InvokeVoidAsync("audioInterop.pause", "radio-audio");
         }
+
         await SaveUserSettings();
     }
 
@@ -372,12 +405,13 @@ private async Task ToggleFog(bool value)
             _ = RunThunderLoop(); 
         }
         else { await JS.InvokeVoidAsync("audioInterop.pause", "thunder-audio"); }
+        await SaveUserSettings();
     }
-    
-    private async Task UpdateThunderVolume(int value)
-    {
+
+    private async Task UpdateThunderVolume(int value) {
         thunderVolume = value;
         await JS.InvokeVoidAsync("audioInterop.setVolume", "thunder-audio", value);
+        _ = SaveUserSettings();
     }
 
     private async Task RunThunderLoop()
@@ -398,168 +432,181 @@ private async Task ToggleFog(bool value)
         }
     }
 
-    private bool _isAppReady = false; // Наш главный предохранитель
-    private bool _isFirstLoad = true; // Дополнительный флаг
+    private bool _isAppReady = false;
+    private bool _isFirstLoad = true;
 
     private class BirdData 
-{ 
-    public Guid Id { get; set; } = Guid.NewGuid(); 
-    public string BirdClass { get; set; } // Например, "bird-one"
-    public int Top { get; set; } 
-    public double Speed { get; set; } 
-    public double Delay { get; set; } 
-}
-
-private List<BirdData> _activeBirds = new(); // Список летящих птиц
-
-protected override async Task OnAfterRenderAsync(bool firstRender)
-{
-    if (firstRender)
-    {
-        // Сначала загружаем настройки пользователя
-        await LoadUserSettings();
-
-        // Небольшая задержка для плавного появления (ваша логика)
-        await Task.Delay(3000);
-        _isAppReady = true;
-
-        // Запускаем цикл птиц
-        _ = RunContinuousBirdsLoop();
-        
-        // Уведомляем систему, что состояние изменилось
-        await InvokeAsync(StateHasChanged);
+    { 
+        public Guid Id { get; set; } = Guid.NewGuid(); 
+        public string BirdClass { get; set; }
+        public int Top { get; set; } 
+        public double Speed { get; set; } 
+        public double Delay { get; set; } 
+        public bool IsFlyingRight { get; set; }
     }
-}
 
-private async Task RunContinuousBirdsLoop()
-{
-    var rnd = new Random();
-    string[] birdClasses = { "bird-one", "bird-two", "bird-three", "bird-four" };
+    private List<BirdData> _activeBirds = new();
 
-    while (true)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        int count = rnd.Next(2, 5);
-        int baseTop = rnd.Next(5, 16);
-
-        for (int i = 0; i < count; i++)
+        if (firstRender)
         {
-            var bird = new BirdData
+            try 
             {
-                BirdClass = birdClasses[rnd.Next(birdClasses.Length)],
-                Top = baseTop + rnd.Next(-3, 4),
-                Speed = 15.0 + rnd.NextDouble() * 5.0,
-                Delay = i * 0.7
-            };
-            _activeBirds.Add(bird);
-            
-            _ = Task.Delay((int)((bird.Speed + bird.Delay) * 1000) + 2000).ContinueWith(async t => {
-                _activeBirds.Remove(bird);
-                await InvokeAsync(StateHasChanged);
-            });
-        } 
-        
-        await InvokeAsync(StateHasChanged);
-        await Task.Delay(rnd.Next(10000, 25000));
-    }
-}
-    private async Task LoadUserSettings()
-{
-    var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
-    if (string.IsNullOrEmpty(token)) return;
-
-    Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-    try
-    {
-        var profile = await Http.GetFromJsonAsync<UserProfileDto>("api/profile");
-        if (profile is null) return;
-
-        isNightMode = profile.IsNightMode;
-        playFog = profile.PlayFog;
-        isRadioEnabled = profile.IsRadioEnabled;
-        radioVolume = profile.RadioVolume;
-        isRainEnabled = profile.IsRainEnabled;
-        rainVolume = profile.RainVolume;
-
-        StateHasChanged();
-
-        // Применяем загруженные настройки звука к элементам DOM
-        if (isRadioEnabled)
-        {
-            if (!isRadioInitialized)
-            {
-                currentTrackIndex = Random.Shared.Next(1, 11);
-                currentTrackUrl = $"audio/radio/track{currentTrackIndex}.mp3";
-                isRadioInitialized = true;
-                StateHasChanged();
-                await Task.Delay(300);
-                await JS.InvokeVoidAsync("audioInterop.play", "radio-audio");
-                double randomStartTime = Random.Shared.Next(10, 60);
-                await JS.InvokeVoidAsync("audioInterop.setCurrentTime", "radio-audio", randomStartTime);
+                await LoadUserSettings();
             }
-            await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", radioVolume);
-        }
-
-        if (isRainEnabled)
-        {
-            // Инициализация капель дождя, если он включен
-            var rnd = new Random();
-            _rainDrops = Enumerable.Range(0, 60).Select(_ => new RainDropData
+            catch (Exception ex) 
             {
-                Left = rnd.NextDouble() * 100,
-                Delay = rnd.NextDouble() * 2,
-                Duration = 0.6 + rnd.NextDouble() * 0.4
-            }).ToList();
-            isRainInDom = true;
-            isRainAnimationActive = true;
+                Console.WriteLine($"Settings load failed: {ex.Message}");
+            }
 
-            await JS.InvokeVoidAsync("audioInterop.play", "rain-audio");
-            await JS.InvokeVoidAsync("audioInterop.setVolume", "rain-audio", rainVolume);
+            await Task.Delay(3000);
+            _isAppReady = true;
+
+            _ = RunContinuousBirdsLoop();
+        
+            await InvokeAsync(StateHasChanged);
         }
     }
-    catch { }
-}
-
-private async Task SaveUserSettings()
-{
-    var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
-    if (string.IsNullOrEmpty(token)) return;
-
-    Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-    var settings = new UpdateSettingsRequest
+    private async Task RunContinuousBirdsLoop()
     {
-        IsNightMode = isNightMode,
-        PlayFog = playFog,
-        IsRadioEnabled = isRadioEnabled,
-        RadioVolume = radioVolume,
-        IsRainEnabled = isRainEnabled,
-        RainVolume = rainVolume,
-    };
+        var rnd = new Random();
+        string[] birdClasses = { "bird-one", "bird-two", "bird-three", "bird-four" };
 
-    try
-    {
-        await Http.PutAsJsonAsync("api/profile/settings", settings);
+        while (true)
+        {
+            int count = rnd.Next(2, 5);
+            int baseTop = rnd.Next(5, 25);
+            bool flyRight = rnd.Next(0, 2) == 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                var bird = new BirdData
+                {
+                    BirdClass = birdClasses[rnd.Next(birdClasses.Length)],
+                    Top = baseTop + rnd.Next(-3, 4),
+                    Speed = 15.0 + rnd.NextDouble() * 5.0,
+                    Delay = i * 0.7,
+                    IsFlyingRight = flyRight
+                };
+            
+                _activeBirds.Add(bird);
+
+                _ = Task.Delay((int)((bird.Speed + bird.Delay) * 1000) + 5000).ContinueWith(async t => {
+                    _activeBirds.Remove(bird);
+                    await InvokeAsync(StateHasChanged);
+                });
+            } 
+        
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(rnd.Next(10000, 25000));
+        }
     }
-    catch { }
-}
-    private bool _isBirdsLoopRunning = false;
+
+
+    private async Task LoadUserSettings()
+    {
+        var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
+        if (string.IsNullOrEmpty(token)) return;
+
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            var profile = await Http.GetFromJsonAsync<UserProfileDto>("api/profile");
+            if (profile is null) return;
+
+            isNightMode = profile.IsNightMode;
+            playFog = profile.PlayFog;
+            isRadioEnabled = profile.IsRadioEnabled;
+            radioVolume = profile.RadioVolume;
+            isRainEnabled = profile.IsRainEnabled;
+            rainVolume = profile.RainVolume;
+
+            StateHasChanged();
+
+            if (isRadioEnabled)
+            {
+                if (string.IsNullOrEmpty(currentTrackUrl))
+                {
+                    currentTrackIndex = Random.Shared.Next(1, 11);
+                    currentTrackUrl = $"audio/radio/track{currentTrackIndex}.mp3";
+                    StateHasChanged();
+                }
+
+                await Task.Delay(500); 
+                await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", radioVolume);
+
+                if (!isRadioInitialized)
+                {
+                    double randomStartTime = Random.Shared.Next(15, 70);
+                    await JS.InvokeVoidAsync("audioInterop.forceRadioStart", "radio-audio", randomStartTime);
+                    isRadioInitialized = true;
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("audioInterop.play", "radio-audio");
+                }
+            }
+
+            if (isRainEnabled)
+            {
+                var rnd = new Random();
+                _rainDrops = Enumerable.Range(0, 60).Select(_ => new RainDropData
+                {
+                    Left = rnd.NextDouble() * 100,
+                    Delay = rnd.NextDouble() * 2,
+                    Duration = 0.6 + rnd.NextDouble() * 0.4
+                }).ToList();
+                isRainInDom = true;
+                isRainAnimationActive = true;
+
+                await JS.InvokeVoidAsync("audioInterop.play", "rain-audio");
+                await JS.InvokeVoidAsync("audioInterop.setVolume", "rain-audio", rainVolume);
+            }
+        }
+        catch { }
+    }
+
+    private async Task SaveUserSettings()
+    {
+        var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
+        if (string.IsNullOrEmpty(token)) return;
+
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var settings = new UpdateSettingsRequest
+        {
+            IsNightMode = isNightMode,
+            PlayFog = playFog,
+            IsRadioEnabled = isRadioEnabled,
+            RadioVolume = radioVolume,
+            IsRainEnabled = isRainEnabled,
+            RainVolume = rainVolume,
+        };
+
+        try
+        {
+            await Http.PutAsJsonAsync("api/profile/settings", settings);
+        }
+        catch { }
+    }
+        private bool _isBirdsLoopRunning = false;
 
     private async Task ToggleBirds(bool value)
     {
         isBirdsEnabled = value;
-
         if (isBirdsEnabled)
         {
             await JS.InvokeVoidAsync("audioInterop.play", "birds-audio");
-            await JS.InvokeVoidAsync("audioInterop.setVolume", "birds-audio", birdsVolume);
+            await UpdateBirdsVolume(birdsVolume);
         }
         else
         {
             _ = FadeOutBirdsAudio();
         }
+        await SaveUserSettings();
     }
-
     private async Task FadeOutBirdsAudio()
     {
         int currentVol = birdsVolume;
@@ -573,6 +620,22 @@ private async Task SaveUserSettings()
         await JS.InvokeVoidAsync("audioInterop.pause", "birds-audio");
     }
 
+    private async Task Logout()
+    {
+        await JS.InvokeVoidAsync("localStorage.removeItem", "jwt_token");
+
+        Http.DefaultRequestHeaders.Authorization = null;
+
+        isNightMode = false;
+        isRadioEnabled = false;
+        isRainEnabled = false;
+        TotalScore = 0;
+
+        Snackbar.Add("Вы успешно вышли из системы", Severity.Info);
+
+        StateHasChanged();
+    }
+
     private async Task UpdateBirdsVolume(int value)
     {
         birdsVolume = value;
@@ -582,23 +645,23 @@ private async Task SaveUserSettings()
     private async Task UpdateRadioVolume(int value)
     {
         radioVolume = value;
-        int actualVolume = isRadioEnabled ? radioVolume : 0;
-        await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", actualVolume);
-        await SaveUserSettings();
+        if (isRadioEnabled)
+        {
+            await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", radioVolume);
+        }
+        _ = SaveUserSettings(); 
     }
-
     private async Task PlayNextTrack()
     {
-        currentTrackIndex = currentTrackIndex >= 10 ? 1 : currentTrackIndex + 1;
+        currentTrackIndex = (currentTrackIndex >= 10) ? 1 : currentTrackIndex + 1;
         currentTrackUrl = $"audio/radio/track{currentTrackIndex}.mp3";
     
         StateHasChanged();
-        await Task.Delay(100);
+        await Task.Delay(200);
     
         await JS.InvokeVoidAsync("audioInterop.play", "radio-audio");
         await UpdateRadioVolume(radioVolume);
     }
-
     private async Task OpenLoginDialog()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
@@ -626,11 +689,32 @@ private async Task SaveUserSettings()
         }
     
         selectedMinutes = (displayHours * 60) + displayMinutes;
-        // Убираем: if (selectedMinutes < 1) selectedMinutes = 1;
     
         if (!isRunning) secondsLeft = selectedMinutes * 60;
         StateHasChanged();
     }
+
+
+    private void GenerateUniqueClouds()
+    {
+        var rnd = new Random();
+        string[] cloudClasses = { "cloud-1", "cloud-2", "cloud-3" };
+        _activeClouds.Clear();
+
+        for (int i = 0; i < 6; i++) 
+        {
+            int duration = rnd.Next(100, 200);
+            _activeClouds.Add(new CloudData
+            {
+                Class = cloudClasses[rnd.Next(cloudClasses.Length)],
+                DirectionClass = rnd.Next(0, 2) == 0 ? "drift-right" : "drift-left",
+                NegDelay = -rnd.NextDouble() * duration, 
+                Duration = duration,
+                Top = rnd.Next(5, 40)
+            });
+        }
+    }
+
     private async Task HandleMouseDown(MouseEventArgs e, string type)
     {
         if (isRunning || isHoursInputMode || isMinutesInputMode) return;
@@ -729,118 +813,144 @@ private async Task SaveUserSettings()
     private enum FishingAnimationState { None, InitialDrop, PassiveFishing, ActiveBite, FinalRaise }
     private FishingAnimationState _animationState = FishingAnimationState.None;
 
-private async Task StartTimer()
-{
-    _warning30Played = false;
-    _fourSecondsPlayed = false;
-
-    if (isRunning || selectedMinutes <= 0) 
+    private class CloudData
     {
-        if (selectedMinutes <= 0) Snackbar.Add("Выберите время для рыбалки!", Severity.Warning);
-        return;
+        public string Class { get; set; } = "";
+        public string DirectionClass { get; set; } = "";
+        public double NegDelay { get; set; } 
+        public int Duration { get; set; } 
+        public int Top { get; set; }
     }
 
-    // УДАЛИЛИ отсюда проигрывание fish-sound1, чтобы он не играл в начале
-    isRunning = true;
-    _progressValue = 0;
-    
-    int totalSeconds = selectedMinutes * 60;
-    secondsLeft = totalSeconds;
-    double thresholdSeconds = (double)totalSeconds * 0.10; 
+    private List<CloudData> _activeClouds = new();
 
-    _halfTimeNagSent = false;
-    catchResult = null;
-    _currentQuote = _quotes[Random.Shared.Next(_quotes.Length)];
-    
-    _animationState = FishingAnimationState.InitialDrop;
-    await TriggerSplash(); // Теперь это просто всплеск без звука warning
 
-    _animationState = FishingAnimationState.PassiveFishing;
-    cts = new CancellationTokenSource();
-    timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
-
-    try
+    protected override async Task OnInitializedAsync()
     {
-        while (await timer.WaitForNextTickAsync(cts.Token) && secondsLeft > 0)
+        GenerateUniqueClouds();
+
+        if (!isRadioInitialized)
         {
-            secondsLeft--;
-            _progressValue = ((double)(totalSeconds - secondsLeft) / totalSeconds) * 100;
-
-            // 1. Звук только на 30 секундах (fish-sound1)
-            if (!_warning30Played && secondsLeft == 30)
-            {
-                _warning30Played = true;
-                await JS.InvokeVoidAsync("audioInterop.setVolume", "fish-sound1", 50);
-                await JS.InvokeVoidAsync("audioInterop.play", "fish-sound1");
-            }
-
-            // 2. Звук только на 4 секундах (fish-warning)
-            if (!_fourSecondsPlayed && secondsLeft == 4)
-            {
-                _fourSecondsPlayed = true;
-                await JS.InvokeVoidAsync("audioInterop.setVolume", "fish-warning", 50);
-                await JS.InvokeVoidAsync("audioInterop.play", "fish-warning");
-            }
-
-            if (secondsLeft <= thresholdSeconds && _animationState == FishingAnimationState.PassiveFishing)
-            {
-                _animationState = FishingAnimationState.ActiveBite;
-            }
-
-            if (secondsLeft % 30 == 0 && secondsLeft > 0)
-            {
-                _currentQuote = _quotes[Random.Shared.Next(_quotes.Length)];
-            }
-
-            StateHasChanged();
+            currentTrackIndex = Random.Shared.Next(1, 11);
+            currentTrackUrl = $"audio/radio/track{currentTrackIndex}.mp3";
         }
 
-        if (secondsLeft == 0) await FinishSession();
+        await Task.CompletedTask;
     }
-    catch (OperationCanceledException) { }
-}
-
-
-private async Task FinishSession()
-{
-    _animationState = FishingAnimationState.FinalRaise;
-    await TriggerSplash(); // Визуальный всплеск
-
-    // Играем только финальный звук один раз
-    await JS.InvokeVoidAsync("audioInterop.setVolume", "fish-sound2", 10);
-    await JS.InvokeVoidAsync("audioInterop.play", "fish-sound2");
-
-    isRunning = false;
-    timer?.Dispose();
-    cts.Cancel();
-    
-try 
+    private async Task StartTimer()
     {
-        var response = await Http.GetFromJsonAsync<FishCatchResult>($"api/fishery/catch?minutes={selectedMinutes}");
-        if (response != null) 
-        {
-            catchResult = response;
-            TotalScore += response.TotalPoints;
-            CatchHistory.Add(response);
+        _warning30Played = false;
+        _fourSecondsPlayed = false;
 
-            // ОТПРАВКА ОЧКОВ НА СЕРВЕР
-            var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
-            if (!string.IsNullOrEmpty(token))
+        if (isRunning || selectedMinutes <= 0) 
+        {
+            if (selectedMinutes <= 0) Snackbar.Add("Выберите время для рыбалки!", Severity.Warning);
+            return;
+        }
+
+        isRunning = true;
+        _progressValue = 0;
+    
+        int totalSeconds = selectedMinutes * 60;
+        secondsLeft = totalSeconds;
+        double thresholdSeconds = (double)totalSeconds * 0.10; 
+
+        _halfTimeNagSent = false;
+        catchResult = null;
+        _currentQuote = _quotes[Random.Shared.Next(_quotes.Length)];
+    
+        _animationState = FishingAnimationState.InitialDrop;
+        await TriggerSplash();
+
+        _animationState = FishingAnimationState.PassiveFishing;
+        cts = new CancellationTokenSource();
+        timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cts.Token) && secondsLeft > 0)
             {
-                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                await Http.PostAsJsonAsync("api/profile/points", response.TotalPoints);
+                secondsLeft--;
+                _progressValue = ((double)(totalSeconds - secondsLeft) / totalSeconds) * 100;
+
+
+                    if (!_halfTimeNagSent && secondsLeft <= totalSeconds / 2)
+                    {
+                        Snackbar.Add("Рыба уже кружит рядом!", Severity.Info);
+                        _halfTimeNagSent = true;
+                    }
+
+                if (!_warning30Played && secondsLeft == 30)
+                {
+                    _warning30Played = true;
+                    await JS.InvokeVoidAsync("audioInterop.setVolume", "fish-sound1", 50);
+                    await JS.InvokeVoidAsync("audioInterop.play", "fish-sound1");
+                }
+
+                if (!_fourSecondsPlayed && secondsLeft == 4)
+                {
+                    _fourSecondsPlayed = true;
+                    await JS.InvokeVoidAsync("audioInterop.setVolume", "fish-warning", 50);
+                    await JS.InvokeVoidAsync("audioInterop.play", "fish-warning");
+                }
+
+                if (secondsLeft <= thresholdSeconds && _animationState == FishingAnimationState.PassiveFishing)
+                {
+                    _animationState = FishingAnimationState.ActiveBite;
+                }
+
+                if (secondsLeft % 30 == 0 && secondsLeft > 0)
+                {
+                    _currentQuote = _quotes[Random.Shared.Next(_quotes.Length)];
+                }
+
+                StateHasChanged();
             }
 
-            var parameters = new DialogParameters { ["CatchResult"] = response, ["IsNight"] = isNightMode };
-            var options = new DialogOptions { BackdropClick = false, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-            await DialogService.ShowAsync<CatchDialog>("Улов", parameters, options);
+            if (secondsLeft == 0) await FinishSession();
         }
+        catch (OperationCanceledException) { }
     }
-    catch (Exception ex) { Console.WriteLine($"Ошибка API: {ex.Message}"); }
 
-    _animationState = FishingAnimationState.None;
-    StateHasChanged();
-}
+
+    private async Task FinishSession()
+    {
+        _animationState = FishingAnimationState.FinalRaise;
+        await TriggerSplash(); 
+
+        await JS.InvokeVoidAsync("audioInterop.setVolume", "fish-sound2", 10);
+        await JS.InvokeVoidAsync("audioInterop.play", "fish-sound2");
+
+        isRunning = false;
+        timer?.Dispose();
+        cts.Cancel();
+    
+    try 
+        {
+            var response = await Http.GetFromJsonAsync<FishCatchResult>($"api/fishery/catch?minutes={selectedMinutes}");
+            if (response != null) 
+            {
+                catchResult = response;
+                TotalScore += response.TotalPoints;
+                CatchHistory.Add(response);
+
+                var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    await Http.PostAsJsonAsync("api/profile/points", response.TotalPoints);
+                }
+
+                var parameters = new DialogParameters { ["CatchResult"] = response, ["IsNight"] = isNightMode };
+                var options = new DialogOptions { BackdropClick = false, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+                await DialogService.ShowAsync<CatchDialog>("Улов", parameters, options);
+            }
+        }
+        catch (Exception ex) { Console.WriteLine($"Ошибка API: {ex.Message}"); }
+
+        _animationState = FishingAnimationState.None;
+        StateHasChanged();
+    }
     private void StopTimer()
     {
         isRunning = false;
@@ -856,32 +966,38 @@ try
 
         if (isRainEnabled)
         {
-            var rnd = new Random();
-            _rainDrops = Enumerable.Range(0, 60).Select(_ => new RainDropData
+            if (_rainDrops == null || _rainDrops.Count == 0)
             {
-                Left = rnd.NextDouble() * 100,
-                Delay = rnd.NextDouble() * 2,
-                Duration = 0.6 + rnd.NextDouble() * 0.4
-            }).ToList();
+                var rnd = new Random();
+                _rainDrops = Enumerable.Range(0, 80).Select(_ => new RainDropData
+                {
+                    Left = rnd.NextDouble() * 100,
+                    Delay = rnd.NextDouble() * 2,
+                    Duration = 0.5 + rnd.NextDouble() * 0.3
+                }).ToList();
+            }
 
             isRainInDom = true;
-            StateHasChanged();
-            await Task.Delay(50);
+            StateHasChanged(); 
+
+            await Task.Delay(100);
             isRainAnimationActive = true;
 
             await JS.InvokeVoidAsync("audioInterop.play", "rain-audio");
-            await JS.InvokeVoidAsync("audioInterop.setVolume", "rain-audio", rainVolume);
+            await UpdateRainVolume(rainVolume);
         }
         else
         {
             isRainAnimationActive = false;
-            await Task.Delay(2000); 
-            if (!isRainEnabled)
+        
+            await Task.Delay(1500); 
+            if (!isRainEnabled) 
             {
                 isRainInDom = false;
                 await JS.InvokeVoidAsync("audioInterop.pause", "rain-audio");
             }
         }
+    
         await SaveUserSettings();
         StateHasChanged();
     }
@@ -893,18 +1009,17 @@ try
         await SaveUserSettings();
         StateHasChanged();
     }
-
     private async Task HandleLakeClick(MouseEventArgs e)
     {
-        await JS.InvokeVoidAsync("visualEffects.createRipple", "#lake-container", e.OffsetX, e.OffsetY);
+        await JS.InvokeVoidAsync("console.log", "C# поймал клик в зоне воды");
+        await JS.InvokeVoidAsync("visualEffects.createRipple", "#lake-container", e.ClientX, e.ClientY);
     }
-
     private async Task TriggerSplash()
     {
         showSplash = true;
         StateHasChanged();
     
-        await Task.Delay(600); // Только визуальный эффект всплеска
+        await Task.Delay(600);
     
         showSplash = false;
         StateHasChanged();
