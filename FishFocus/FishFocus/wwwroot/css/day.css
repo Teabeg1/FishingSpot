@@ -1,0 +1,35 @@
+.day-theme .settings-panel {
+    background: rgba(255, 255, 255, 0.4);
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.day-theme .action-button.mud-button-filled-error {
+    background-color: #ef5350 !important;
+    color: #ffffff !important;
+    transition: all 0.3s ease;
+}
+
+.day-theme .action-button.mud-button-filled-error:hover {
+    background-color: #e53935 !important;
+    box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
+}
+
+.day-theme .italic-quote {
+    color: #ffffff !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
+    font-weight: 500;
+}
+
+.day-theme .fog-overlay {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+
+.main-container.day-theme {
+    background-color: #a2d2ff;
+    color: #2c3e50;
+}
+
+.day-theme .fog-overlay {
+    background-color: rgba(255, 255, 255, 0.4);
+}
