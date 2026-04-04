@@ -25,232 +25,204 @@
 <PageTitle>Рыбалка</PageTitle>
 
 <div class="main-container @(isNightMode ? "night-theme" : "day-theme")"
-    style="opacity: @(_isAppReady ? "1" : "0"); transition: opacity 0.8s ease-in-out;">
-<div class="lake-area" id="lake-container"> 
-    
-<div class="water-click-zone" @onclick="HandleLakeClick" @onclick:stopPropagation></div>
-<div class="water-line"></div>
-<div class="clouds-visual-area">
-    @foreach (var cloud in _activeClouds)
-    {
-        <div class="cloud @cloud.Class @cloud.DirectionClass" 
-             style="top: @(cloud.Top)%; 
-                    animation-duration: @(cloud.Duration)s; 
-                    animation-delay: @(cloud.NegDelay.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))s;">
-        </div>
-    }
-</div>
-<div class="fog-overlay @(playFog ? "fog-active" : "")"></div>
-        <div class="lightning-flash @(isLightningStrike ? "flash-active" : "")"></div>
-        
-        @if (_isAppReady)
-            {
-<div class="birds-visual-area">
-    @foreach (var bird in _activeBirds)
-    {
-        <div class="bird-container @(bird.IsFlyingRight ? "fly-right" : "fly-left")" 
-             style="top: @(bird.Top)%; animation-duration: @(bird.Speed.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))s; animation-delay: @(bird.Delay.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))s;"
-             @key="bird.Id">
-            <div class="bird @bird.BirdClass"></div>
-        </div>
-    }
-</div>
-}
+     style="opacity: @(_isAppReady ? "1" : "0"); transition: opacity 0.8s ease-in-out;">
 
-        <div class="lightning-container">
-            @foreach (var bolt in _activeBolts)
-            {
-                <svg class="lightning-bolt" 
-                     style="left: @(bolt.Left)%; top: @(bolt.Top)%; width: @(bolt.Width)px; height: @(bolt.Height)px;" 
-                     viewBox="0 0 20 40" @key="bolt.Id">
-                    <path d="M10 0 L2 20 L18 15 L8 40" fill="none" stroke="white" stroke-width="2" />
-                </svg>
-            }
-        </div>
-            @if (isRainInDom) 
-            {
-                <div class="rain-overlay @(isRainAnimationActive ? "rain-active" : "")" @key="@("rain-layer-v6")">
-                    @if (_rainDrops != null)
+    <div class="lake-area" id="lake-container"> 
+        @if (isRainInDom) 
+        {
+            <div class="rain-overlay @(isRainAnimationActive ? "rain-active" : "")" @key="@("rain-layer-v6")">
+                @if (_rainDrops != null)
+                {
+                    @foreach (var drop in _rainDrops)
                     {
-                        @foreach (var drop in _rainDrops)
-                        {
-                            <div class="rain-drop" 
-                                 style="left: @(drop.Left.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))%; 
-                                        animation-delay: @(drop.Delay.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))s; 
-                                        animation-duration: @(drop.Duration.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))s;">
-                            </div>
-                        }
+                        <div class="rain-drop" 
+                             style="left: @(drop.Left.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))%; 
+                                    animation-delay: @(drop.Delay.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))s; 
+                                    animation-duration: @(drop.Duration.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))s;">
+                        </div>
+                    }
+                }
+            </div>
+        }
+
+        <div class="sky-part">
+            <div class="clouds-visual-area">
+                @foreach (var cloud in _activeClouds)
+                {
+                    <div class="cloud @cloud.Class @cloud.DirectionClass" 
+                         style="top: @(cloud.Top)%; 
+                                animation-duration: @(cloud.Duration)s; 
+                                animation-delay: @(cloud.NegDelay.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))s;">
+                    </div>
+                }
+            </div>
+            
+            <div class="lightning-flash @(isLightningStrike ? "flash-active" : "")"></div>
+            
+            @if (_isAppReady)
+            {
+                <div class="birds-visual-area">
+                    @foreach (var bird in _activeBirds)
+                    {
+                        <div class="bird-container @(bird.IsFlyingRight ? "fly-right" : "fly-left")" 
+                             style="top: @(bird.Top)%; animation-duration: @(bird.Speed.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))s; animation-delay: @(bird.Delay.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))s;"
+                             @key="bird.Id">
+                            <div class="bird @bird.BirdClass"></div>
+                        </div>
                     }
                 </div>
             }
 
-<div class="fishing-ui-group">
-<div class="progress-container">
-            <MudProgressCircular Color="Color.Primary" Value="@_progressValue" Size="Size.Large" Thickness="2" Style="height:300px; width:300px;">
-                <ChildContent>
-                     @if (isRunning)
-                     {
-                        <div class="fishing-scene">
-                            <div class="water-line"></div>
-                            <div class="bobber @GetFishingAnimationClass()">
-                                <div class="bobber-top"></div>
-                            </div>
-                            <div class="ripples"></div>
-                            <div class="splash-effect @(showSplash ? "splash-active" : "")"></div>
-                        </div>
-                     }
-                </ChildContent>
-            </MudProgressCircular>
+            <div class="lightning-container">
+                @foreach (var bolt in _activeBolts)
+                {
+                    <svg class="lightning-bolt" 
+                         style="left: @(bolt.Left)%; top: @(bolt.Top)%; width: @(bolt.Width)px; height: @(bolt.Height)px;" 
+                         viewBox="0 0 20 40" @key="bolt.Id">
+                        <path d="M10 0 L2 20 L18 15 L8 40" fill="none" stroke="white" stroke-width="2" />
+                    </svg>
+                }
+            </div>
         </div>
 
-        <MudText Typo="Typo.h1" Class="timer-text">@timeDisplay</MudText>
+        <div class="water-part">
+            <div class="water-click-zone" @onclick="HandleLakeClick" @onclick:stopPropagation></div>
+                                <div class="fog-overlay @(playFog ? "fog-active" : "")"></div>
 
-        <div class="quote-area">
-            <MudText Typo="Typo.body1" Class="italic-quote">"@_currentQuote"</MudText>
+            <div class="fishing-ui-group">
+                <div class="progress-container">
+                    <MudProgressCircular Color="Color.Primary" Value="@_progressValue" Size="Size.Large" Thickness="2" Style="height:150px; width:150px;">
+                        <ChildContent>
+                             @if (isRunning)
+                             {
+                                <div class="fishing-scene">
+                                    <div class="water-line"></div>
+                                    <div class="bobber @GetFishingAnimationClass()">
+                                        <div class="bobber-top"></div>
+                                    </div>
+                                    <div class="ripples"></div>
+                                    <div class="splash-effect @(showSplash ? "splash-active" : "")"></div>
+                                </div>
+                             }
+                        </ChildContent>
+                    </MudProgressCircular>
+                </div>
+
+                <MudText Typo="Typo.h1" Class="timer-text">@timeDisplay</MudText>
+
+                <div class="quote-area">
+                    <MudText Typo="Typo.body1" Class="italic-quote">"@_currentQuote"</MudText>
+                </div>
+                
+                @if (_isAppReady)
+                {
+                    @if (!isRunning)
+                    {
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="StartTimer" Class="action-button">
+                            Забросить удочку
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="StopTimer" Class="action-button">
+                            Прервать рыбалку
+                        </MudButton>
+                    }
+                }
+            </div>
         </div>
-        
-        @if (_isAppReady)
-        {
-            @if (!isRunning)
-            {
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="StartTimer" Class="action-button">
-                    Забросить удочку
-                </MudButton>
-            }
-            else
-            {
-<MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="StopTimer" Class="action-button">
-    Прервать рыбалку
-</MudButton>
-            }
-        }
-    </div></div>
+    </div>
+
     <div class="settings-panel">
-<div class="d-flex justify-space-between align-center mb-2">
-        <MudText Typo="Typo.h6">Настройки</MudText>
-<div class="d-flex">
-        <MudIconButton Icon="@Icons.Material.Filled.AccountCircle" 
-                       Color="Color.Inherit" 
-                       OnClick="OpenLoginDialog" 
-                       Title="Личный кабинет" />
+        <div class="d-flex justify-space-between align-center mb-2">
+            <MudText Typo="Typo.h6">Настройки</MudText>
+            <div class="d-flex">
+                <MudIconButton Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" OnClick="OpenLoginDialog" Title="Личный кабинет" />
+                <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Error" OnClick="Logout" Title="Выйти" />
+            </div>
+        </div>
+
+        <div class="time-picker-container mb-2">
+            <div class="time-box">
+                <div class="time-zone top" @onmousedown='(e) => HandleZoneClick("hours", 1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
+                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Small" />
+                </div>
+                <div class="time-zone middle" @onclick='() => EnableInputMode("hours")'>
+                    @if (isHoursInputMode)
+                    {
+                        <input id="h-input-field" type="number" class="time-input-hidden" value="@displayHours" @onchange='(e) => ManualUpdate(e, "hours")' @onblur='() => isHoursInputMode = false' @onkeydown="@(e => { if (e.Key == "Enter") isHoursInputMode = false; })" />
+                    }
+                    <div class="time-content-wrapper"><span class="time-value">@displayHours</span><span class="time-label">ч</span></div>
+                </div>
+                <div class="time-zone bottom" @onmousedown='(e) => HandleZoneClick("hours", -1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
+                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" />
+                </div>
+            </div>
+            <div class="time-box">
+                <div class="time-zone top" @onmousedown='(e) => HandleZoneClick("minutes", 1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
+                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Small" />
+                </div>
+                <div class="time-zone middle" @onclick='() => EnableInputMode("minutes")'>
+                    @if (isMinutesInputMode)
+                    {
+                        <input id="m-input-field" type="number" class="time-input-hidden" value="@displayMinutes" @onchange='(e) => ManualUpdate(e, "minutes")' @onblur='() => isMinutesInputMode = false' @onkeydown="@(e => { if (e.Key == "Enter") isMinutesInputMode = false; })" />
+                    }
+                    <div class="time-content-wrapper"><span class="time-value">@displayMinutes.ToString("D2")</span><span class="time-label">мин</span></div>
+                </div>
+                <div class="time-zone bottom" @onmousedown='(e) => HandleZoneClick("minutes", -1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
+                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" />
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-block"><MudSwitch Value="isNightMode" T="bool" ValueChanged="ToggleNightMode" Label="Ночной режим" Color="Color.Secondary" Disabled="@(!_isAppReady)" /></div>
         
-        <MudIconButton Icon="@Icons.Material.Filled.Logout" 
-                       Color="Color.Error" 
-                       OnClick="Logout" 
-                       Title="Выйти" />
-    </div>    </div>
-
-<div class="time-picker-container mb-2">
-    <div class="time-box">
-        <div class="time-zone top" @onmousedown='(e) => HandleZoneClick("hours", 1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
-            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Small" />
-        </div>
-        
-        <div class="time-zone middle" @onclick='() => EnableInputMode("hours")'>
-            @if (isHoursInputMode)
-            {
-                <input id="h-input-field" type="number" class="time-input-hidden" 
-                       value="@displayHours" 
-                       @onchange='(e) => ManualUpdate(e, "hours")' 
-                       @onblur='() => isHoursInputMode = false'
-                       @onkeydown="@(e => { if (e.Key == "Enter") isHoursInputMode = false; })" />
-            }
-            <div class="time-content-wrapper">
-                <span class="time-value">@displayHours</span>
-                <span class="time-label">ч</span>
+        <div class="setting-block">
+            <MudSwitch Value="isRadioEnabled" T="bool" ValueChanged="ToggleRadio" Label="Радио" Disabled="@(!_isAppReady)" Color="Color.Secondary" />
+            <div class="slider-wrapper @(isRadioEnabled ? "is-visible" : "")">
+                <MudSlider T="int" Value="radioVolume" ValueChanged="UpdateRadioVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Secondary" />
+                <span class="volume-label">Громкость: @radioVolume%</span>
             </div>
         </div>
 
-        <div class="time-zone bottom" @onmousedown='(e) => HandleZoneClick("hours", -1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
-            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" />
-        </div>
-    </div>
-
-    <div class="time-box">
-        <div class="time-zone top" @onmousedown='(e) => HandleZoneClick("minutes", 1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
-            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Small" />
-        </div>
-
-        <div class="time-zone middle" @onclick='() => EnableInputMode("minutes")'>
-            @if (isMinutesInputMode)
-            {
-                <input id="m-input-field" type="number" class="time-input-hidden" 
-                       value="@displayMinutes" 
-                       @onchange='(e) => ManualUpdate(e, "minutes")' 
-                       @onblur='() => isMinutesInputMode = false' 
-                       @onkeydown="@(e => { if (e.Key == "Enter") isMinutesInputMode = false; })" />
-            }
-            <div class="time-content-wrapper">
-                <span class="time-value">@displayMinutes.ToString("D2")</span>
-                <span class="time-label">мин</span>
+        <div class="setting-block">
+            <MudSwitch Value="isRainEnabled" T="bool" ValueChanged="ToggleRain" Label="Дождь" Disabled="@(!_isAppReady)" Color="Color.Info" />
+            <div class="slider-wrapper @(isRainEnabled ? "is-visible" : "")">
+                <MudSlider T="int" Value="rainVolume" ValueChanged="UpdateRainVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Info" />
+                <span class="volume-label">Громкость: @rainVolume%</span>
             </div>
         </div>
 
-        <div class="time-zone bottom" @onmousedown='(e) => HandleZoneClick("minutes", -1)' @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseUp">
-            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" />
-        </div>
-    </div>
-</div>
-
-<div class="setting-block">
-        <MudSwitch Value="isNightMode" T="bool" ValueChanged="ToggleNightMode" Label="Ночной режим" Color="Color.Secondary" Disabled="@(!_isAppReady)" />
-    </div>
-    
-    <div class="setting-block">
-        <MudSwitch Value="isRadioEnabled" T="bool" ValueChanged="ToggleRadio" Label="Радио" Disabled="@(!_isAppReady)" Color="Color.Secondary" />
-        <div class="slider-wrapper @(isRadioEnabled ? "is-visible" : "")">
-            <MudSlider T="int" Value="radioVolume" ValueChanged="UpdateRadioVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Secondary" />
-            <span class="volume-label">Громкость: @radioVolume%</span>
-        </div>
-    </div>
-
-    <div class="setting-block">
-        <MudSwitch Value="isRainEnabled" T="bool" ValueChanged="ToggleRain" Label="Дождь" Disabled="@(!_isAppReady)" Color="Color.Info" />
-        <div class="slider-wrapper @(isRainEnabled ? "is-visible" : "")">
-            <MudSlider T="int" Value="rainVolume" ValueChanged="UpdateRainVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Info" />
-            <span class="volume-label">Громкость: @rainVolume%</span>
-        </div>
-    </div>
-
-    <div class="setting-block">
-        <MudSwitch Value="isThunderEnabled" T="bool" ValueChanged="ToggleThunder" Label="Гром" Disabled="@(!_isAppReady)" Color="Color.Warning" />
-        <div class="slider-wrapper @(isThunderEnabled ? "is-visible" : "")">
-            <MudSlider T="int" Value="thunderVolume" ValueChanged="UpdateThunderVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Warning" />
-            <span class="volume-label">Громкость: @thunderVolume%</span>
-        </div>
-    </div>
-
-    <div class="setting-block">
-        <MudSwitch Value="isBirdsEnabled" T="bool" ValueChanged="ToggleBirds" Label="Птицы" Disabled="@(!_isAppReady)" Color="Color.Success" />
-        <div class="slider-wrapper @(isBirdsEnabled ? "is-visible" : "")">
-            <MudSlider T="int" Value="birdsVolume" ValueChanged="UpdateBirdsVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Success" />
-            <span class="volume-label">Громкость: @birdsVolume%</span>
-        </div>
-    </div>
-
-
-    <div class="setting-block">
-    <MudSwitch Value="playFog" T="bool" ValueChanged="ToggleFog" 
-               Label="Туман" Color="Color.Info" Disabled="@(!_isAppReady)" />
-    </div>
-
-    <div class="score-display-panel mb-2">
-            <div class="score-icon-box">
-                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" Size="Size.Medium" />
+        <div class="setting-block">
+            <MudSwitch Value="isThunderEnabled" T="bool" ValueChanged="ToggleThunder" Label="Гром" Disabled="@(!_isAppReady)" Color="Color.Warning" />
+            <div class="slider-wrapper @(isThunderEnabled ? "is-visible" : "")">
+                <MudSlider T="int" Value="thunderVolume" ValueChanged="UpdateThunderVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Warning" />
+                <span class="volume-label">Громкость: @thunderVolume%</span>
             </div>
+        </div>
+
+        <div class="setting-block">
+            <MudSwitch Value="isBirdsEnabled" T="bool" ValueChanged="ToggleBirds" Label="Птицы" Disabled="@(!_isAppReady)" Color="Color.Success" />
+            <div class="slider-wrapper @(isBirdsEnabled ? "is-visible" : "")">
+                <MudSlider T="int" Value="birdsVolume" ValueChanged="UpdateBirdsVolume" Disabled="@(!_isAppReady)" Min="0" Max="100" Color="Color.Success" />
+                <span class="volume-label">Громкость: @birdsVolume%</span>
+            </div>
+        </div>
+
+        <div class="setting-block"><MudSwitch Value="playFog" T="bool" ValueChanged="ToggleFog" Label="Туман" Color="Color.Info" Disabled="@(!_isAppReady)" /></div>
+
+        <div class="score-display-panel mb-2">
+            <div class="score-icon-box"><MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" Size="Size.Medium" /></div>
             <div class="score-text-box">
                 <span class="score-label">Мои очки</span>
                 <span class="score-value">@TotalScore</span>
             </div>
         </div>
 
-
         @if (showDevTools)
         {
             <div class="mt-auto pt-4 border-t-1" style="border-top: 1px solid rgba(255,255,255,0.1)">
-                <TestTools IsRunning="@isRunning" 
-                           SelectedMinutes="@selectedMinutes" 
-                           OnFastForward="@(() => secondsLeft = 5)" />
+                <TestTools IsRunning="@isRunning" SelectedMinutes="@selectedMinutes" OnFastForward="@(() => secondsLeft = 5)" />
             </div>
         }
     </div> 

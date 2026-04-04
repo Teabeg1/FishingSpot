@@ -1,0 +1,18 @@
+.validation-message {
+    color: #e50000;
+}
+
+.quote-area {
+    margin: 0 !important;
+    padding: 0;
+    text-align: center;
+    z-index: 200;
+    pointer-events: none !important;
+}
+
+.italic-quote {
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    font-style: italic;
+    opacity: 1;
+}
