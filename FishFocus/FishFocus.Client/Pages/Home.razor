@@ -91,7 +91,11 @@
 
             <div class="fishing-ui-group">
                 <div class="progress-container">
-                    <MudProgressCircular Color="Color.Primary" Value="@_progressValue" Size="Size.Large" Thickness="2" Style="height:150px; width:150px;">
+                    <MudProgressCircular Value="@_progressValue" 
+                                         Size="Size.Large" 
+                                         Thickness="2" 
+                                         Class="main-progress-circle" 
+                                         Style="height:150px; width:150px;">
                         <ChildContent>
                              @if (isRunning)
                              {
@@ -106,7 +110,7 @@
                              }
                         </ChildContent>
                     </MudProgressCircular>
-                </div>
+                    </div>
 
                 <MudText Typo="Typo.h1" Class="timer-text">@timeDisplay</MudText>
 
