@@ -1,12 +1,18 @@
 .timer-text {
     font-size: 5rem;
     font-weight: bold;
+    color: black;
     z-index: 210;
     margin: 0 !important;
     margin-top: -10px;
     pointer-events: none !important;
     line-height: 0.5;
     pointer-events: none !important;
+    filter: none !important;
+}
+
+.day-theme .main-progress-circle {
+    color: black !important;
 }
 
 .time-picker-container {

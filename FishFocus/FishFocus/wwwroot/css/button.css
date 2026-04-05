@@ -11,9 +11,10 @@ mud-button-filled {
     z-index: 220;
     pointer-events: auto !important;
     margin: 0 !important;
-    pointer-events: auto !important;
     filter: none !important;
     animation: fadeInEffect 1.5s ease-in-out forwards;
+    transform: translateY(120px);
+    pointer-events: auto !important;
 }
 
 .test-tools-button {
