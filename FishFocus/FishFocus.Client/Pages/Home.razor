@@ -489,6 +489,7 @@
 
         try
         {
+
             var profile = await Http.GetFromJsonAsync<UserProfileDto>("api/profile");
             if (profile is null) return;
 
@@ -498,6 +499,12 @@
             radioVolume = profile.RadioVolume;
             isRainEnabled = profile.IsRainEnabled;
             rainVolume = profile.RainVolume;
+            TotalScore = profile.TotalPoints;
+            isBirdsEnabled = profile.IsBirdsEnabled;
+            birdsVolume = profile.BirdsVolume;
+            isThunderEnabled = profile.IsThunderEnabled;
+            thunderVolume = profile.ThunderVolume;
+
 
             StateHasChanged();
 
@@ -559,6 +566,10 @@
             RadioVolume = radioVolume,
             IsRainEnabled = isRainEnabled,
             RainVolume = rainVolume,
+            IsBirdsEnabled = isBirdsEnabled,
+            BirdsVolume = birdsVolume,
+            IsThunderEnabled = isThunderEnabled,
+            ThunderVolume = thunderVolume,
         };
 
         try
@@ -603,12 +614,27 @@
         Http.DefaultRequestHeaders.Authorization = null;
 
         isNightMode = false;
-        isRadioEnabled = false;
-        isRainEnabled = false;
+        playFog = false;
         TotalScore = 0;
 
-        Snackbar.Add("Вы успешно вышли из системы", Severity.Info);
+        isRadioEnabled = false;
+        radioVolume = 50;
 
+        isRainEnabled = false;
+        rainVolume = 50;
+
+        isBirdsEnabled = false;
+        birdsVolume = 50;
+
+        isThunderEnabled = false;
+        thunderVolume = 50;
+
+        await JS.InvokeVoidAsync("audioInterop.pause", "radio-audio");
+        await JS.InvokeVoidAsync("audioInterop.pause", "rain-audio");
+        await JS.InvokeVoidAsync("audioInterop.pause", "birds-audio");
+        await JS.InvokeVoidAsync("audioInterop.pause", "thunder-audio");
+
+        Snackbar.Add("Вы успешно вышли из системы", Severity.Info);
         StateHasChanged();
     }
 
