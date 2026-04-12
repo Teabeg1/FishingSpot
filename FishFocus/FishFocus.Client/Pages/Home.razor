@@ -223,6 +223,25 @@
             </div>
         </div>
 
+<div class="d-flex gap-2 mb-4">
+    <div class="diary-container flex-grow-1 justify-center py-2">
+        <MudIconButton Icon="@Icons.Material.Filled.AssignmentTurnedIn" 
+                       Variant="Variant.Filled" 
+                       Color="Color.Success" 
+                       OnClick="OpenDiary" 
+                       Title="Открыть дневник" 
+                       Class="diary-button" />
+    </div>
+
+    <div class="diary-container flex-grow-1 justify-center py-2">
+        <MudIconButton Icon="@Icons.Material.Filled.MenuBook" 
+                       Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       OnClick="OpenCollection" 
+                       Title="Книга рыболова" 
+                       Class="diary-button" />
+    </div>
+</div>
         @if (showDevTools)
         {
             <div class="mt-auto pt-4 border-t-1" style="border-top: 1px solid rgba(255,255,255,0.1)">
@@ -266,6 +285,7 @@
     private List<FishCatchResult> CatchHistory = new();
     private string timeDisplay => $"{(secondsLeft / 60):D2}:{(secondsLeft % 60):D2}";
     private CancellationTokenSource? _adjustCts;
+    private List<DiaryEntry> _diaryEntries = new();
     private bool _isAdjusting = false;
     private bool isRainInDom = false;
     private bool isRainAnimationActive = false;
@@ -813,6 +833,13 @@
 
         await Task.CompletedTask;
     }
+    private async Task OpenDiary()
+    {
+        var parameters = new DialogParameters { ["Entries"] = _diaryEntries };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        await DialogService.ShowAsync<DiaryDialog>("Дневник успехов", parameters, options);
+    }
+
     private async Task StartTimer()
     {
         _warning30Played = false;
@@ -888,28 +915,29 @@
         catch (OperationCanceledException) { }
     }
 
-
     private async Task FinishSession()
     {
         _animationState = FishingAnimationState.FinalRaise;
-        await TriggerSplash(); 
+        await TriggerSplash();
 
-        await JS.InvokeVoidAsync("audioInterop.setVolume", "fish-sound2", 10);
-        await JS.InvokeVoidAsync("audioInterop.play", "fish-sound2");
+        await JS.InvokeVoidAsync("audioInterop.setVolume", "fish-sound2", 10); //
+        await JS.InvokeVoidAsync("audioInterop.play", "fish-sound2"); //
 
         isRunning = false;
         timer?.Dispose();
         cts.Cancel();
-    
-    try 
+
+        try 
         {
-            var response = await Http.GetFromJsonAsync<FishCatchResult>($"api/fishery/catch?minutes={selectedMinutes}");
+            var response = await Http.GetFromJsonAsync<FishCatchResult>($"api/fishery/catch?minutes={selectedMinutes}"); //
+        
             if (response != null) 
             {
                 catchResult = response;
                 TotalScore += response.TotalPoints;
                 CatchHistory.Add(response);
 
+                //back
                 var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
                 if (!string.IsNullOrEmpty(token))
                 {
@@ -917,16 +945,49 @@
                     await Http.PostAsJsonAsync("api/profile/points", response.TotalPoints);
                 }
 
-                var parameters = new DialogParameters { ["CatchResult"] = response, ["IsNight"] = isNightMode };
-                var options = new DialogOptions { BackdropClick = false, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-                await DialogService.ShowAsync<CatchDialog>("Улов", parameters, options);
+                var parameters = new DialogParameters { ["CatchResult"] = response, ["IsNight"] = isNightMode }; //
+                var options = new DialogOptions { BackdropClick = false, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true }; //
+            
+                var catchDialog = await DialogService.ShowAsync<CatchDialog>("Улов", parameters, options); //
+                var result = await catchDialog.Result;
+
+                if (result is not null && !result.Canceled)
+                {
+                    var noteOptions = new DialogOptions 
+                    { 
+                        CloseOnEscapeKey = true, 
+                        MaxWidth = MaxWidth.ExtraSmall, 
+                        FullWidth = true,
+                        BackdropClick = false
+                    };
+    
+                    var noteDialog = await DialogService.ShowAsync<NoteInputDialog>("Запись в дневник", noteOptions);
+                    var noteResult = await noteDialog.Result;
+
+                    if (noteResult is not null && !noteResult.Canceled)
+                    {
+                        string note = noteResult.Data as string ?? "";
+                    
+                        _diaryEntries.Add(new DiaryEntry
+                        {
+                            CompletionTime = DateTime.Now,
+                            MinutesSpent = selectedMinutes,
+                            FishName = response.Fish.Name,
+                            Note = note
+                        });
+                    }
+                }
             }
         }
-        catch (Exception ex) { Console.WriteLine($"Ошибка API: {ex.Message}"); }
+        catch (Exception ex) 
+        { 
+            Console.WriteLine($"Ошибка API: {ex.Message}");
+        }
 
         _animationState = FishingAnimationState.None;
         StateHasChanged();
     }
+
     private void StopTimer()
     {
         isRunning = false;
@@ -1013,5 +1074,11 @@
     {
         cts.Cancel();
         timer?.Dispose();
+    }
+    private async Task OpenCollection()
+    {
+        var parameters = new DialogParameters { ["CatchHistory"] = CatchHistory };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        await DialogService.ShowAsync<FishCollectionDialog>("Моя коллекция", parameters, options);
     }
 }

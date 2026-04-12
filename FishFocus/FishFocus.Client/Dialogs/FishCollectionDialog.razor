@@ -1,0 +1,82 @@
+﻿@using FishFocus.Shared.Models
+@using MudBlazor
+@inject IDialogService DialogService
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center">
+            <MudText Typo="Typo.h6">Пойманные рыбы</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <div style="max-height: 500px; overflow-y: auto; overflow-x: hidden;">
+            @if (GroupedFish == null || !GroupedFish.Any())
+            {
+                <div class="d-flex flex-column align-center py-10">
+                    <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Default" />
+                    <MudText Class="mt-2" Color="Color.Secondary">Вы еще не поймали ни одной рыбы...</MudText>
+                </div>
+            }
+            else
+            {
+                <div class="collection-grid">
+                    @foreach (var item in GroupedFish)
+                    {
+                        <div class="fish-collection-card rarity-@(item.Fish.Rarity)" 
+                             @onclick="() => ShowDetails(item.Fish)" 
+                             style="cursor: pointer; position: relative;">
+                             
+                            <div class="fish-count-badge" style="position: absolute; top: 5px; right: 5px;">x@(item.Count)</div>
+                            
+                            <div class="fish-card-image">
+                                @if (!string.IsNullOrEmpty(item.Fish.ImageUrl))
+                                {
+                                    <MudImage Src="@item.Fish.ImageUrl" Width="80" Height="80" ObjectFit="ObjectFit.Contain" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.QuestionMark" Size="Size.Large" Color="Color.Default" />
+                                }
+                            </div>
+                            <div class="fish-card-info">
+                                <div class="fish-card-name">@item.Fish.Name</div>
+                                <div class="fish-card-desc">@item.Fish.Description</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" Variant="Variant.Text" OnClick="() => MudDialog.Close()">Закрыть</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public List<FishCatchResult> CatchHistory { get; set; } = new();
+
+    private List<FishGroup> GroupedFish => CatchHistory
+        .Where(c => c.Fish != null)
+        .GroupBy(c => c.Fish.Name)
+        .Select(g => new FishGroup { 
+            Fish = g.First().Fish, 
+            Count = g.Count() 
+        })
+        .OrderByDescending(g => g.Fish.Rarity)
+        .ToList();
+
+    private class FishGroup
+    {
+        public Fish Fish { get; set; } = null!;
+        public int Count { get; set; }
+    }
+
+    private async Task ShowDetails(Fish fish)
+    {
+        var parameters = new DialogParameters { ["Fish"] = fish };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        await DialogService.ShowAsync<FishDetailsDialog>(fish.Name, parameters, options);
+    }
+}

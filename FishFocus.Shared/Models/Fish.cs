@@ -7,4 +7,6 @@ public class Fish
     public int Points { get; set; }
     public string ImageUrl { get; set; } = string.Empty;
     public int MinMinutes { get; set; } = 0;
+
+    public string Description { get; set; } = string.Empty;
 }
