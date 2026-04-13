@@ -1,7 +1,10 @@
-﻿namespace FishFocus.Shared.Models;
+﻿using System.ComponentModel.DataAnnotations;
+namespace FishFocus.Shared.Models;
 
 public class Fish
 {
+    [Key]
+    public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public int Rarity { get; set; }
     public int Points { get; set; }

@@ -1,4 +1,6 @@
-﻿namespace FishFocus.Shared.DTOs.Profile;
+﻿using FishFocus.Shared.Models;
+
+namespace FishFocus.Shared.DTOs.Profile;
 
 public class UserProfileDto
 {
@@ -30,4 +32,10 @@ public class UserProfileDto
     // Гром
     public bool IsThunderEnabled { get; set; }
     public int ThunderVolume { get; set; }
+
+    // Cчетчик минут
+    public int LastSelectedMinutes { get; set; }
+
+    public List<FishCatchResult> CaughtFishes { get; set; } = new();
+    public List<DiaryEntry> DiaryEntries { get; set; } = new();
 }
