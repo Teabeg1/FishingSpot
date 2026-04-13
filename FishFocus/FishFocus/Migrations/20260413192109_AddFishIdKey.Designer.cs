@@ -3,6 +3,7 @@ using System;
 using FishFocus.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FishFocus.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260413192109_AddFishIdKey")]
+    partial class AddFishIdKey
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,14 +47,14 @@ namespace FishFocus.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("UserId")
+                    b.Property<int?>("UserId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("DiaryEntries");
+                    b.ToTable("DiaryEntry");
                 });
 
             modelBuilder.Entity("FishFocus.Shared.Models.Fish", b =>
@@ -85,7 +88,7 @@ namespace FishFocus.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Fishes");
+                    b.ToTable("Fish");
                 });
 
             modelBuilder.Entity("FishFocus.Shared.Models.FishCatchResult", b =>
@@ -111,7 +114,7 @@ namespace FishFocus.Migrations
                     b.Property<int>("TotalPoints")
                         .HasColumnType("integer");
 
-                    b.Property<int>("UserId")
+                    b.Property<int?>("UserId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -120,7 +123,7 @@ namespace FishFocus.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("CaughtFishes");
+                    b.ToTable("FishCatchResult");
                 });
 
             modelBuilder.Entity("FishFocus.Shared.Models.User", b =>
@@ -205,9 +208,7 @@ namespace FishFocus.Migrations
                 {
                     b.HasOne("FishFocus.Shared.Models.User", null)
                         .WithMany("DiaryEntries")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("UserId");
                 });
 
             modelBuilder.Entity("FishFocus.Shared.Models.FishCatchResult", b =>
@@ -220,9 +221,7 @@ namespace FishFocus.Migrations
 
                     b.HasOne("FishFocus.Shared.Models.User", null)
                         .WithMany("CaughtFishes")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("UserId");
 
                     b.Navigation("Fish");
                 });

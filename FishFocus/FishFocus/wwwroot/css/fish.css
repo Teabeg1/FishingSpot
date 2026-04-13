@@ -1,8 +1,3 @@
-.fishing-ui-group {
-    pointer-events: none !important;
-}
-
-
 .fishing-scene {
     position: relative;
     height: 150px;
@@ -15,10 +10,11 @@
 .fishing-ui-group {
     position: absolute;
     top: 0;
+    margin-top: 15px !important;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 30px;
+    gap: 20px;
     flex-direction: column;
     align-items: center;
     z-index: 200;

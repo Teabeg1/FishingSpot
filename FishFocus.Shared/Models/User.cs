@@ -33,4 +33,9 @@ public class User
     // Гром (будущее)
     public bool IsThunderEnabled { get; set; } = false;
     public int ThunderVolume { get; set; } = 50;
+
+    // Минуты
+    public int LastSelectedMinutes { get; set; }
+    public List<FishCatchResult> CaughtFishes { get; set; } = new();
+    public List<DiaryEntry> DiaryEntries { get; set; } = new();
 }

@@ -25,4 +25,7 @@ public class UpdateSettingsRequest
     // Гром
     public bool IsThunderEnabled { get; set; }
     public int ThunderVolume { get; set; }
+
+    // Cчетчик минут
+    public int LastSelectedMinutes { get; set; }
 }

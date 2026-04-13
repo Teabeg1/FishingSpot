@@ -272,6 +272,7 @@
     private bool showDevTools = true;
     private bool showSplash = false;
     private bool isNightMode = false;
+    private bool _isProcessingAuth = false;
     private int selectedMinutes = 30;
     private int secondsLeft = 1800;
     private bool isRunning = false;
@@ -404,12 +405,6 @@
         await SaveUserSettings();
     }
 
-    private async Task UpdateThunderVolume(int value) {
-        thunderVolume = value;
-        await JS.InvokeVoidAsync("audioInterop.setVolume", "thunder-audio", value);
-        _ = SaveUserSettings();
-    }
-
     private async Task RunThunderLoop()
     {
         var rnd = new Random();
@@ -460,7 +455,7 @@
             _isAppReady = true;
 
             _ = RunContinuousBirdsLoop();
-        
+
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -485,7 +480,7 @@
                     Delay = i * 0.7,
                     IsFlyingRight = flyRight
                 };
-            
+
                 _activeBirds.Add(bird);
 
                 _ = Task.Delay((int)((bird.Speed + bird.Delay) * 1000) + 5000).ContinueWith(async t => {
@@ -493,88 +488,139 @@
                     await InvokeAsync(StateHasChanged);
                 });
             } 
-        
+
             await InvokeAsync(StateHasChanged);
             await Task.Delay(rnd.Next(10000, 25000));
         }
     }
+    private async Task PrepareRain()
+    {
+        var rnd = new Random();
+        _rainDrops = Enumerable.Range(0, 80).Select(_ => new RainDropData
+    {
+        Left = rnd.NextDouble() * 100,
+        Delay = rnd.NextDouble() * 2,
+        Duration = 0.5 + rnd.NextDouble() * 0.3
+    }).ToList();
 
+        isRainInDom = true;
+        StateHasChanged();
+
+        await Task.Delay(100);
+        isRainAnimationActive = true;
+    }
 
     private async Task LoadUserSettings()
     {
         var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
-        if (string.IsNullOrEmpty(token)) return;
-
+        if (string.IsNullOrEmpty(token)) {
+            Console.WriteLine("--- [LOAD] Токен не найден, загрузка отменена. ---");
+            return;
+        }
         Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         try
         {
-
+            Console.WriteLine("--- [LOAD] Запрашиваю профиль с сервера... ---");
             var profile = await Http.GetFromJsonAsync<UserProfileDto>("api/profile");
-            if (profile is null) return;
+
+            if (profile is null) {
+                Console.WriteLine("--- [LOAD] Ошибка: профиль пуст. ---");
+                return;
+            }
+
+            Console.WriteLine($"--- [LOAD] ДАННЫЕ С СЕРВЕРА: Таймер={profile.LastSelectedMinutes}, Очки={profile.TotalPoints} ---");
+            TotalScore = profile.TotalPoints;
 
             isNightMode = profile.IsNightMode;
+
             playFog = profile.PlayFog;
+
             isRadioEnabled = profile.IsRadioEnabled;
             radioVolume = profile.RadioVolume;
             isRainEnabled = profile.IsRainEnabled;
             rainVolume = profile.RainVolume;
-            TotalScore = profile.TotalPoints;
-            isBirdsEnabled = profile.IsBirdsEnabled;
-            birdsVolume = profile.BirdsVolume;
-            isThunderEnabled = profile.IsThunderEnabled;
-            thunderVolume = profile.ThunderVolume;
 
+            isBirdsEnabled = profile.IsBirdsEnabled; 
+            isThunderEnabled = profile.IsThunderEnabled;
+            birdsVolume = profile.BirdsVolume;
+            thunderVolume = profile.ThunderVolume;
 
             StateHasChanged();
 
             if (isRadioEnabled)
             {
-                if (string.IsNullOrEmpty(currentTrackUrl))
-                {
-                    currentTrackIndex = Random.Shared.Next(1, 11);
-                    currentTrackUrl = $"audio/radio/track{currentTrackIndex}.mp3";
-                    StateHasChanged();
-                }
-
-                await Task.Delay(500); 
+                await Task.Delay(300);
                 await JS.InvokeVoidAsync("audioInterop.setVolume", "radio-audio", radioVolume);
-
                 if (!isRadioInitialized)
                 {
-                    double randomStartTime = Random.Shared.Next(15, 70);
-                    await JS.InvokeVoidAsync("audioInterop.forceRadioStart", "radio-audio", randomStartTime);
+                    await JS.InvokeVoidAsync("audioInterop.forceRadioStart", "radio-audio", Random.Shared.Next(15, 70));
                     isRadioInitialized = true;
                 }
-                else
-                {
-                    await JS.InvokeVoidAsync("audioInterop.play", "radio-audio");
-                }
+                else { await JS.InvokeVoidAsync("audioInterop.play", "radio-audio"); }
             }
 
             if (isRainEnabled)
             {
-                var rnd = new Random();
-                _rainDrops = Enumerable.Range(0, 60).Select(_ => new RainDropData
-                {
-                    Left = rnd.NextDouble() * 100,
-                    Delay = rnd.NextDouble() * 2,
-                    Duration = 0.6 + rnd.NextDouble() * 0.4
-                }).ToList();
-                isRainInDom = true;
-                isRainAnimationActive = true;
-
+                await PrepareRain();
                 await JS.InvokeVoidAsync("audioInterop.play", "rain-audio");
                 await JS.InvokeVoidAsync("audioInterop.setVolume", "rain-audio", rainVolume);
             }
+
+            if (isBirdsEnabled)
+            {
+                await JS.InvokeVoidAsync("audioInterop.play", "birds-audio");
+                await JS.InvokeVoidAsync("audioInterop.setVolume", "birds-audio", birdsVolume);
+            }
+
+            if (isThunderEnabled)
+            {
+                await JS.InvokeVoidAsync("audioInterop.play", "thunder-audio");
+                await JS.InvokeVoidAsync("audioInterop.setVolume", "thunder-audio", thunderVolume);
+                _ = RunThunderLoop();
+            }
+
+            if (profile.LastSelectedMinutes > 0)
+            {
+                selectedMinutes = profile.LastSelectedMinutes;
+                displayHours = selectedMinutes / 60;
+                displayMinutes = selectedMinutes % 60;
+                if (!isRunning) secondsLeft = selectedMinutes * 60;
+
+                Console.WriteLine($"--- [LOAD] UI обновлен на: {displayHours}ч {displayMinutes}мин ---");
+            }
+
+            if (profile != null) {
+                CatchHistory = profile.CaughtFishes ?? new();
+                _diaryEntries = profile.DiaryEntries ?? new();
+
+                StateHasChanged();
+            }
+
+            else {
+                Console.WriteLine("--- [LOAD] В базе 0 минут, оставляем дефолт. ---");
+            }
+            StateHasChanged();
+
         }
-        catch { }
+        catch (Exception ex) 
+        { 
+            Console.WriteLine($"--- [LOAD] КРИТИЧЕСКАЯ ОШИБКА: {ex.Message} ---");
+        }
     }
 
-    private async Task SaveUserSettings()
+    private async Task SaveUserSettings(bool force = false)
     {
+        if (_isProcessingAuth && !force) 
+        {
+            Console.WriteLine("--- [SAVE] Блокировка: идёт вход/выход ---");
+            return;
+        }
+
         var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
         if (string.IsNullOrEmpty(token)) return;
+        if (!force && selectedMinutes < 1) return;
+        Console.WriteLine($"--- [SAVE] Пытаюсь сохранить в базу: {selectedMinutes} мин. ---");
 
         Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -590,15 +636,18 @@
             BirdsVolume = birdsVolume,
             IsThunderEnabled = isThunderEnabled,
             ThunderVolume = thunderVolume,
+            LastSelectedMinutes = selectedMinutes
         };
 
         try
         {
-            await Http.PutAsJsonAsync("api/profile/settings", settings);
+            var response = await Http.PutAsJsonAsync("api/profile/settings", settings);
+            Console.WriteLine($"--- [SAVE] Отправлено: {selectedMinutes}. Код: {response.StatusCode} ---");
         }
-        catch { }
+        catch(Exception ex) { Console.WriteLine($"--- [SAVE] ОШИБКА: {ex.Message} ---"); }
     }
-        private bool _isBirdsLoopRunning = false;
+
+    private bool _isBirdsLoopRunning = false;
 
     private async Task ToggleBirds(bool value)
     {
@@ -629,39 +678,71 @@
 
     private async Task Logout()
     {
-        await JS.InvokeVoidAsync("localStorage.removeItem", "jwt_token");
+        Console.WriteLine("--- [AUTH] Начало выхода ---");
+        await SaveUserSettings(force: true);
 
+        _isProcessingAuth = true;
+
+        await JS.InvokeVoidAsync("localStorage.removeItem", "jwt_token");
         Http.DefaultRequestHeaders.Authorization = null;
+
+
+        selectedMinutes = 30;
+        displayHours = 0;
+        displayMinutes = 30;
+        secondsLeft = 1800;
+
+        TotalScore = 0;
+        CatchHistory.Clear();
+        _diaryEntries.Clear();
 
         isNightMode = false;
         playFog = false;
-        TotalScore = 0;
-
-        isRadioEnabled = false;
-        radioVolume = 50;
 
         isRainEnabled = false;
-        rainVolume = 50;
+        isRainInDom = false;
+        isRainAnimationActive = false;
+        _rainDrops?.Clear();
+        await JS.InvokeVoidAsync("audioInterop.pause", "rain-audio");
 
         isBirdsEnabled = false;
-        birdsVolume = 50;
+        await JS.InvokeVoidAsync("audioInterop.pause", "birds-audio");
 
         isThunderEnabled = false;
-        thunderVolume = 50;
-
-        await JS.InvokeVoidAsync("audioInterop.pause", "radio-audio");
-        await JS.InvokeVoidAsync("audioInterop.pause", "rain-audio");
-        await JS.InvokeVoidAsync("audioInterop.pause", "birds-audio");
+        _activeBolts?.Clear();
         await JS.InvokeVoidAsync("audioInterop.pause", "thunder-audio");
 
-        Snackbar.Add("Вы успешно вышли из системы", Severity.Info);
+        isRadioEnabled = false;
+        isRadioInitialized = false;
+        await JS.InvokeVoidAsync("audioInterop.pause", "radio-audio");
+
+        CatchHistory.Clear();
+        _diaryEntries.Clear();
+
+        await Task.Delay(500);
+        _isProcessingAuth = false; 
+        Console.WriteLine("--- [AUTH] Выход завершен, блокировка снята ---");       
+        StateHasChanged();
+
+        _isProcessingAuth = false;
+
+        Snackbar.Add("Вы вышли. Все эффекты остановлены.", Severity.Info);
         StateHasChanged();
     }
+
 
     private async Task UpdateBirdsVolume(int value)
     {
         birdsVolume = value;
-        await JS.InvokeVoidAsync("audioInterop.setVolume", "birds-audio", birdsVolume);
+        await JS.InvokeVoidAsync("audioInterop.setVolume", "birds-audio", value);
+        await SaveUserSettings();
+    }
+
+    private async Task UpdateThunderVolume(int value)
+    {
+        thunderVolume = value;
+        await JS.InvokeVoidAsync("audioInterop.setVolume", "thunder-audio", value);
+        await SaveUserSettings();
     }
     
     private async Task UpdateRadioVolume(int value)
@@ -673,6 +754,7 @@
         }
         _ = SaveUserSettings(); 
     }
+
     private async Task PlayNextTrack()
     {
         currentTrackIndex = (currentTrackIndex >= 10) ? 1 : currentTrackIndex + 1;
@@ -684,6 +766,8 @@
         await JS.InvokeVoidAsync("audioInterop.play", "radio-audio");
         await UpdateRadioVolume(radioVolume);
     }
+
+
     private async Task OpenLoginDialog()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
@@ -692,10 +776,18 @@
 
         if (result is not null && !result.Canceled)
         {
-            await LoadUserSettings();
+            Console.WriteLine("--- [AUTH] Логин успешен. ВКЛЮЧАЮ БЛОКИРОВКУ. ---");
+            _isProcessingAuth = true; 
+        
+            await LoadUserSettings(); 
+            await Task.Delay(800); 
+        
+            _isProcessingAuth = false; 
+            Console.WriteLine("--- [AUTH] БЛОКИРОВКА СНЯТА. Теперь можно сохранять. ---");
             Snackbar.Add("Настройки синхронизированы!", Severity.Success);
         }
     }
+
     private int displayHours = 0;
     private int displayMinutes = 30;
     private bool isHoursInputMode = false;
@@ -704,19 +796,28 @@
 
     private void SyncSelectedMinutes()
     {
-        if (displayHours >= 2) 
+        if (displayHours >= 4) 
         {
-            displayHours = 2;
+            displayHours = 4;
             displayMinutes = 0;
         }
     
         selectedMinutes = (displayHours * 60) + displayMinutes;
-    
         if (!isRunning) secondsLeft = selectedMinutes * 60;
+    
+        _ = CheckAuthAndSave(); 
+    
         StateHasChanged();
     }
 
-
+    private async Task CheckAuthAndSave()
+    {
+        var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
+        if (!string.IsNullOrEmpty(token) && !_isProcessingAuth)
+        {
+            await SaveUserSettings();
+        }
+    }
     private void GenerateUniqueClouds()
     {
         var rnd = new Random();
@@ -785,8 +886,8 @@
         if (type == "hours")
         {
             displayHours += step;
-            if (displayHours > 2) displayHours = 0;
-            if (displayHours < 0) displayHours = 2;
+            if (displayHours > 4) displayHours = 0;
+            if (displayHours < 0) displayHours = 4;
         }
         else
         {
@@ -813,7 +914,7 @@
     {
         if (int.TryParse(e.Value?.ToString(), out int val))
         {
-            if (type == "hours") displayHours = Math.Clamp(val, 0, 2);
+            if (type == "hours") displayHours = Math.Clamp(val, 0, 4);
             else displayMinutes = Math.Clamp(val, 0, 59);
         }
         isHoursInputMode = false;
@@ -945,9 +1046,8 @@
     {
         _animationState = FishingAnimationState.FinalRaise;
         await TriggerSplash();
-
-        await JS.InvokeVoidAsync("audioInterop.setVolume", "fish-sound2", 10); //
-        await JS.InvokeVoidAsync("audioInterop.play", "fish-sound2"); //
+        await JS.InvokeVoidAsync("audioInterop.setVolume", "fish-sound2", 10);
+        await JS.InvokeVoidAsync("audioInterop.play", "fish-sound2");
 
         isRunning = false;
         timer?.Dispose();
@@ -955,64 +1055,73 @@
 
         try 
         {
-            var response = await Http.GetFromJsonAsync<FishCatchResult>($"api/fishery/catch?minutes={selectedMinutes}"); //
+            var response = await Http.GetFromJsonAsync<FishCatchResult>($"api/fishery/catch?minutes={selectedMinutes}");
         
             if (response != null) 
             {
                 catchResult = response;
+            
                 TotalScore += response.TotalPoints;
                 CatchHistory.Add(response);
 
-                //back
                 var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
                 if (!string.IsNullOrEmpty(token))
                 {
                     Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                
+                    await Http.PostAsJsonAsync("api/profile/save-catch", response);
                     await Http.PostAsJsonAsync("api/profile/points", response.TotalPoints);
                 }
 
-                var parameters = new DialogParameters { ["CatchResult"] = response, ["IsNight"] = isNightMode }; //
-                var options = new DialogOptions { BackdropClick = false, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true }; //
+                var parameters = new DialogParameters { ["CatchResult"] = response, ["IsNight"] = isNightMode };
+                var options = new DialogOptions { BackdropClick = false, CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
             
-                var catchDialog = await DialogService.ShowAsync<CatchDialog>("Улов", parameters, options); //
+                var catchDialog = await DialogService.ShowAsync<CatchDialog>("Улов", parameters, options);
                 var result = await catchDialog.Result;
 
                 if (result is not null && !result.Canceled)
                 {
-                    var noteOptions = new DialogOptions 
-                    { 
-                        CloseOnEscapeKey = true, 
-                        MaxWidth = MaxWidth.ExtraSmall, 
-                        FullWidth = true,
-                        BackdropClick = false
-                    };
-    
+                    var noteOptions = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, BackdropClick = false };
                     var noteDialog = await DialogService.ShowAsync<NoteInputDialog>("Запись в дневник", noteOptions);
                     var noteResult = await noteDialog.Result;
 
                     if (noteResult is not null && !noteResult.Canceled)
                     {
-                        string note = noteResult.Data as string ?? "";
+                        string noteText = noteResult.Data as string ?? "";
                     
-                        _diaryEntries.Add(new DiaryEntry
+                        var newNote = new DiaryEntry
                         {
-                            CompletionTime = DateTime.Now,
+                            CompletionTime = DateTime.UtcNow,
                             MinutesSpent = selectedMinutes,
                             FishName = response.Fish.Name,
-                            Note = note
-                        });
+                            Note = noteText
+                        };
+
+                        _diaryEntries.Add(newNote);
+
+                        if (!string.IsNullOrEmpty(token))
+                        {
+                            var saveResponse = await Http.PostAsJsonAsync("api/profile/save-diary", newNote);
+                            if (saveResponse.IsSuccessStatusCode) {
+                                Console.WriteLine("--- [API] Заметка успешно улетела на сервер ---");
+                            } 
+                            else {
+                                Console.WriteLine($"--- [API] ОШИБКА сохранения заметки: {saveResponse.StatusCode} ---");
+                            }
+                        }
                     }
                 }
             }
         }
         catch (Exception ex) 
         { 
-            Console.WriteLine($"Ошибка API: {ex.Message}");
+            Console.WriteLine($"--- [ERROR] Ошибка при завершении сессии: {ex.Message} ---"); 
         }
 
         _animationState = FishingAnimationState.None;
         StateHasChanged();
     }
+
 
     private void StopTimer()
     {
