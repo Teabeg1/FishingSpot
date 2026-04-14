@@ -1,0 +1,66 @@
+﻿@using FishFocus.Shared.DTOs.Profile
+@using MudBlazor
+@inject HttpClient Http
+
+<MudDialog>
+    <DialogContent>
+        <div style="max-height: 450px; overflow-y: auto;">
+            @if (_leaders == null)
+            {
+                <div class="d-flex justify-center pa-4">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                </div>
+            }
+            else if (!_leaders.Any())
+            {
+                <MudText Align="Align.Center" Class="pa-4">Пока никто не поймал свою первую рыбу.</MudText>
+            }
+            else
+            {
+                <MudTable Items="@_leaders" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Место</MudTh>
+                        <MudTh>Рыболов</MudTh>
+                        <MudTh>Очки</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Место">
+                            @if (_leaders.IndexOf(context) == 0)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" Size="Size.Small" />
+                            }
+                            else
+                            {
+                                @(_leaders.IndexOf(context) + 1)
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Имя">@context.Username</MudTd>
+                        <MudTd DataLabel="Очки"><b>@context.TotalPoints</b></MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="() => MudDialog.Close()">Закрыть</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    private List<LeaderboardEntryDto>? _leaders;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // бэкенду
+            _leaders = await Http.GetFromJsonAsync<List<LeaderboardEntryDto>>("api/profile/leaderboard");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка загрузки таблицы лидеров: {ex.Message}");
+            _leaders = new();
+        }
+    }
+}
