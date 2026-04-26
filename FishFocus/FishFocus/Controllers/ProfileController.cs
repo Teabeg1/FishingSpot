@@ -66,9 +66,7 @@ public class ProfileController : ControllerBase
         if (userId is null) return Unauthorized();
 
         catchResult.UserId = userId.Value;
-
         _db.CaughtFishes.Add(catchResult);
-        await _db.SaveChangesAsync();
 
         var user = await _db.Users.FindAsync(userId.Value);
         if (user is null) return NotFound();
@@ -147,7 +145,7 @@ public class ProfileController : ControllerBase
             .OrderByDescending(u => u.TotalPoints)
             .Take(50)
             .Select(u => new LeaderboardEntryDto
-    {
+            {
                 Username = u.Username,
                 TotalPoints = u.TotalPoints
             })
