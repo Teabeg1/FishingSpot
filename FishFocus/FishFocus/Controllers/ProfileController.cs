@@ -1,7 +1,9 @@
 ﻿using FishFocus.Data;
 using FishFocus.Shared.DTOs.Profile;
+using FishFocus.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace FishFocus.Controllers;
@@ -18,14 +20,18 @@ public class ProfileController : ControllerBase
         _db = db;
     }
 
-    // GET /api/profile
     [HttpGet]
     public async Task<IActionResult> GetProfile()
     {
         var userId = GetUserId();
         if (userId is null) return Unauthorized();
 
-        var user = await _db.Users.FindAsync(userId);
+        var user = await _db.Users
+            .Include(u => u.CaughtFishes)
+            .ThenInclude(f => f.Fish)
+            .Include(u => u.DiaryEntries)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
         if (user is null) return NotFound();
 
         return Ok(new UserProfileDto
@@ -34,72 +40,108 @@ public class ProfileController : ControllerBase
             Email = user.Email,
             TotalPoints = user.TotalPoints,
             CreatedAt = user.CreatedAt,
-
             IsNightMode = user.IsNightMode,
             PlayFog = user.PlayFog,
-
             IsRadioEnabled = user.IsRadioEnabled,
             RadioVolume = user.RadioVolume,
-
             IsRainEnabled = user.IsRainEnabled,
             RainVolume = user.RainVolume,
-
             IsBirdsEnabled = user.IsBirdsEnabled,
             BirdsVolume = user.BirdsVolume,
-
             IsWavesEnabled = user.IsWavesEnabled,
             WavesVolume = user.WavesVolume,
-
             IsThunderEnabled = user.IsThunderEnabled,
             ThunderVolume = user.ThunderVolume,
+            LastSelectedMinutes = user.LastSelectedMinutes,
+
+            CaughtFishes = user.CaughtFishes,
+            DiaryEntries = user.DiaryEntries
         });
     }
 
-    // PUT /api/profile/settings
-    [HttpPut("settings")]
-    public async Task<IActionResult> UpdateSettings([FromBody] UpdateSettingsRequest req)
+    [HttpPost("save-catch")]
+    public async Task<IActionResult> SaveCatch([FromBody] FishCatchResult catchResult)
     {
         var userId = GetUserId();
         if (userId is null) return Unauthorized();
 
+        catchResult.UserId = userId.Value;
+
+        _db.CaughtFishes.Add(catchResult);
+        await _db.SaveChangesAsync();
+
+        return Ok();
+    }
+
+    [HttpPost("save-diary")]
+    public async Task<IActionResult> SaveDiary([FromBody] DiaryEntry entry)
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        try
+        {
+            var user = await _db.Users
+                .Include(u => u.DiaryEntries)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null) return NotFound();
+
+            var newEntry = new DiaryEntry
+            {
+                UserId = userId.Value,
+                CompletionTime = DateTime.UtcNow,
+                MinutesSpent = entry.MinutesSpent,
+                FishName = entry.FishName ?? "Рыба",
+                Note = entry.Note ?? ""
+            };
+
+            user.DiaryEntries.Add(newEntry);
+            await _db.SaveChangesAsync();
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR SaveDiary]: {ex.Message}");
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    [HttpPut("settings")]
+    public async Task<IActionResult> UpdateSettings([FromBody] UpdateSettingsRequest req)
+    {
+        var userId = GetUserId();
         var user = await _db.Users.FindAsync(userId);
         if (user is null) return NotFound();
 
         user.IsNightMode = req.IsNightMode;
         user.PlayFog = req.PlayFog;
-
         user.IsRadioEnabled = req.IsRadioEnabled;
         user.RadioVolume = Math.Clamp(req.RadioVolume, 0, 100);
-
         user.IsRainEnabled = req.IsRainEnabled;
         user.RainVolume = Math.Clamp(req.RainVolume, 0, 100);
-
         user.IsBirdsEnabled = req.IsBirdsEnabled;
         user.BirdsVolume = Math.Clamp(req.BirdsVolume, 0, 100);
-
         user.IsWavesEnabled = req.IsWavesEnabled;
         user.WavesVolume = Math.Clamp(req.WavesVolume, 0, 100);
-
         user.IsThunderEnabled = req.IsThunderEnabled;
         user.ThunderVolume = Math.Clamp(req.ThunderVolume, 0, 100);
+        user.LastSelectedMinutes = req.LastSelectedMinutes;
 
         await _db.SaveChangesAsync();
         return NoContent();
     }
 
-    // POST /api/profile/points
     [HttpPost("points")]
     public async Task<IActionResult> AddPoints([FromBody] int pointsToAdd)
     {
         var userId = GetUserId();
-        if (userId is null) return Unauthorized();
-
         var user = await _db.Users.FindAsync(userId);
         if (user is null) return NotFound();
 
         user.TotalPoints += pointsToAdd;
         await _db.SaveChangesAsync();
-
         return Ok(new { user.TotalPoints });
     }
 

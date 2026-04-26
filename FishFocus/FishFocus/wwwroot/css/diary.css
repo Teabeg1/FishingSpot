@@ -1,0 +1,41 @@
+﻿.diary-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.diary-button {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 10px !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.diary-info {
+    margin-left: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+.diary-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.diary-link {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #4caf50;
+    text-decoration: none;
+}
+
+.diary-link:hover {
+    text-decoration: underline;
+}

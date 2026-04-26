@@ -1,24 +1,11 @@
-﻿@using MudBlazor
-
-<MudPaper Class="pa-4 mt-6" Elevation="4" Style="background-color: #fff9c4; border: 2px dashed #fbc02d; border-radius: 12px;">
-    <MudText Typo="Typo.subtitle2" Align="Align.Center" Class="mb-2" Style="color: #f57f17; font-weight: bold;">
-        ТЕСТИРОВАНИЕ
-    </MudText>
+﻿<div class="test-tools-container">
     
-    <MudButton Variant="Variant.Filled" 
-               Color="Color.Warning" 
-               FullWidth="true" 
-               OnClick="OnFastForward" 
-               Disabled="!IsRunning"
-               StartIcon="@Icons.Material.Filled.FastForward">
-        Скипнуть до 5 сек
+    <MudButton Class="test-tools-button" 
+               Variant="Variant.Filled" 
+               OnClick="OnFastForward">
+        ПРОПУСТИТЬ ДО 5 СЕК
     </MudButton>
-    
-    <MudText Typo="Typo.caption" Class="mt-2 d-block" Align="Align.Center" Style="color: #9e9e9e;">
-        (Расчет очков останется за @SelectedMinutes мин.)
-    </MudText>
-</MudPaper>
-
+</div>
 @code {
     [Parameter] public bool IsRunning { get; set; }
     

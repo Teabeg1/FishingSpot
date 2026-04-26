@@ -1,0 +1,103 @@
+.clouds-visual-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.sky-part {
+    flex: 1;
+    position: relative;
+    background-color: #82caff;
+}
+
+.drift-right {
+    animation: drift-right linear infinite;
+}
+
+.drift-left {
+    animation: drift-left linear infinite;
+}
+
+.cloud {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 50px;
+    filter: blur(5px);
+}
+
+.cloud::after, .cloud::before {
+    content: '';
+    position: absolute;
+    background: inherit;
+    border-radius: 50%;
+}
+
+.cloud-1::after {
+    width: 100px;
+    height: 100px;
+    top: -50px;
+    left: 30px;
+}
+
+.cloud-1::before {
+    width: 80px;
+    height: 80px;
+    top: -30px;
+    left: 100px;
+}
+
+.cloud-2::after {
+    width: 80px;
+    height: 80px;
+    top: -40px;
+    left: 20px;
+}
+
+.cloud-1, .cloud-2, .cloud-3 {
+    position: absolute;
+    will-change: left;
+}
+
+.cloud-1 {
+    width: 200px;
+    height: 60px;
+    opacity: 0.8;
+}
+
+.cloud-2 {
+    width: 150px;
+    height: 50px;
+    opacity: 0.5;
+    transform: scale(0.7);
+}
+
+.cloud-3 {
+    width: 250px;
+    height: 70px;
+    opacity: 0.7;
+}
+
+.cloud-3::after {
+    width: 120px;
+    height: 120px;
+    top: -60px;
+    left: 50px;
+}
+
+.cloud-3::before {
+    width: 90px;
+    height: 90px;
+    top: -40px;
+    left: 130px;
+}
+
+@keyframes cloud-drift-random {
+    to {
+        left: var(--end-left);
+    }
+}

@@ -1,0 +1,77 @@
+﻿@using FishFocus.Shared.Models
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        @if (Fish != null)
+        {
+            <div class="d-flex flex-column align-center pa-4">
+                <MudImage Src="@Fish.ImageUrl" 
+                          Width="180" 
+                          Height="180" 
+                          ObjectFit="ObjectFit.Contain" 
+                          Class="mud-elevation-4 rounded-lg mb-4" 
+                          Style="background: rgba(255,255,255,0.05); padding: 10px;" />
+                
+                <MudText Typo="Typo.h4" 
+                         Style="@($"font-weight: bold; color: {GetRarityHexColor()};")">
+                    @Fish.Name
+                </MudText>
+                
+                <div class="d-flex gap-2 my-2">
+                    <MudChip T="string" Color="@GetRarityColor()" Size="Size.Small" Variant="Variant.Text">
+                        @GetRarityName()
+                    </MudChip>
+                    <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Text">
+                        Ценность: @Fish.Points pts
+                    </MudChip>
+                </div>
+
+                <MudDivider DividerType="DividerType.Middle" Class="my-4" Style="width: 100%" />
+
+                @if (!string.IsNullOrEmpty(Fish.Description))
+                {
+                    <MudText Typo="Typo.body1" 
+                                Align="Align.Center" 
+                                Style="font-style: italic; color: #424242; line-height: 1.5;" 
+                                Class="px-4 mb-2">
+                        "@Fish.Description"
+                    </MudText>
+                }                
+                
+                else
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Error">Описание временно отсутствует</MudText>
+                }
+            </div>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Close" FullWidth="true" Variant="Variant.Filled">Понятно</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public Fish Fish { get; set; } = new();
+
+    private void Close() => MudDialog.Close();
+
+    private Color GetRarityColor() => Fish.Rarity switch {
+        3 => Color.Warning,
+        2 => Color.Secondary,
+        _ => Color.Default
+    };
+
+    private string GetRarityName() => Fish.Rarity switch {
+        3 => "Легендарная",
+        2 => "Редкая",
+        _ => "Обычная"
+    };
+
+    private string GetRarityHexColor() => Fish.Rarity switch {
+        3 => "#FFD700",
+        2 => "#BA68C8",
+        _ => "#BDBDBD"
+    };
+}

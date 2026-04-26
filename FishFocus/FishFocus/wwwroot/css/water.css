@@ -1,0 +1,87 @@
+.water-click-zone {
+    pointer-events: auto !important;
+}
+
+.water-part {
+    flex: 1;
+    position: relative;
+    background: linear-gradient(to bottom, #4fa3e3 0%, #1e4d7b 60%, #0a2342 100%);
+    display: flex;
+    justify-content: center;
+    overflow: visible !important;
+}
+.water-click-zone {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: auto !important;
+}
+
+#lake-container {
+    cursor: url('data:image/svg+xml;utf8,<svg ...>...</svg>'), auto;
+}
+
+.lake-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: relative;
+    z-index: 1;
+}
+
+.lake-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: relative;
+    z-index: 1;
+    transition: background-color 2s ease-in-out;
+}
+
+.water-part {
+    flex: 1;
+    position: relative;
+    background: linear-gradient(to bottom, #4fa3e3 0%, #1e4d7b 60%, #0a2342 100%);
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+}
+.water-part::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient( 0deg, transparent, transparent 20px, rgba(255, 255, 255, 0.03) 21px, transparent 23px );
+    animation: water-waves 10s linear infinite;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.water-part::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 3;
+}
+
+@keyframes water-waves {
+    from {
+        background-position: 0 0;
+    }
+
+    to {
+        background-position: 0 400px;
+    }
+}

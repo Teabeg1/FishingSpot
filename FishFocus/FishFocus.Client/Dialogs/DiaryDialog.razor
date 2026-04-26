@@ -1,0 +1,38 @@
+﻿@using FishFocus.Shared.Models
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <div style="max-height: 400px; overflow-y: auto;">
+            @if (Entries == null || !Entries.Any())
+            {
+                <MudText Align="Align.Center" Class="pa-4">Ваш дневник пока пуст. Поймайте первую рыбу!</MudText>
+            }
+            else
+            {
+                <MudTable Items="@Entries.OrderByDescending(e => e.CompletionTime)" Hover="true" Breakpoint="Breakpoint.None" Dense="true">
+                    <HeaderContent>
+                        <MudTh>Дата и время</MudTh>
+                        <MudTh>Время</MudTh>
+                        <MudTh>Улов</MudTh>
+                        <MudTh>Заметка</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Дата">@context.CompletionTime.ToString("dd.MM HH:mm")</MudTd>
+                        <MudTd DataLabel="Мин">@context.MinutesSpent мин</MudTd>
+                        <MudTd DataLabel="Рыба">@context.FishName</MudTd>
+                        <MudTd DataLabel="Заметка"><i>@context.Note</i></MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="() => MudDialog.Close()">Закрыть</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public List<DiaryEntry> Entries { get; set; } = new();
+}

@@ -1,13 +1,17 @@
 ﻿using FishFocus.Components;
 using FishFocus.Data;
-using FishFocus.Services;
 using FishFocus.Interfaces;
 using FishFocus.Repositories;
-using MudBlazor.Services;
+using FishFocus.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using System.Linq;
 using Microsoft.IdentityModel.Tokens;
+using MudBlazor;
+using MudBlazor.Services;
 using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,8 +50,44 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
+builder.Services.AddMudBlazorSnackbar(config =>
+{
+    config.PositionClass = Defaults.Classes.Position.BottomLeft;
+});
+
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        context.Database.Migrate();
+
+        /*
+        var fishRepo = services.GetRequiredService<IFishRepository>();
+        var fishesFromRepo = await fishRepo.GetAllFishesAsync();
+        foreach (var repoFish in fishesFromRepo)
+        {
+            var dbFish = await context.Fishes.FirstOrDefaultAsync(f => f.Name == repoFish.Name);
+            if (dbFish != null) {
+                dbFish.Description = repoFish.Description;
+                dbFish.Points = repoFish.Points;
+            } else {
+                context.Fishes.Add(repoFish);
+            }
+        }
+        await context.SaveChangesAsync();
+        */
+
+        Console.WriteLine("---> База данных в порядке! <---");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"---> Ошибка БД: {ex.Message} <---");
+    }
+}
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

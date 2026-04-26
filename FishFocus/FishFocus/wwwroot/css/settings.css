@@ -1,0 +1,155 @@
+.settings-panel {
+    z-index: 300;
+}
+
+.settings-panel {
+    margin-left: 4px;
+    transition: transform 0.2s ease;
+}
+
+.settings-panel .mud-icon-button {
+    margin-left: 0px;
+    transition: transform 0.3s ease;
+}
+
+.settings-panel {
+    width: 333px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(15px);
+    transition: all 0.5s ease;
+    overflow-y: auto;
+    max-height: 100vh;
+    pointer-events: auto !important;
+}
+
+.settings-panel::-webkit-scrollbar {
+    width: 4px;
+}
+
+.settings-panel::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+}
+
+.settings-panel {
+    background: rgba(0, 0, 0, 0.4);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+.volume-label {
+    font-size: 10px;
+    white-space: nowrap;
+    position: absolute;
+    bottom: -12px;
+    left: 0;
+}
+
+.setting-block .mud-switch {
+    flex-shrink: 0;
+    width: 125px;
+    margin: 0;
+}
+
+.setting-block {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 10px;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.mud-snackbar {
+    pointer-events: none !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    transition: opacity 300ms !important;
+}
+
+.mud-snackbar button,
+.mud-snackbar .mud-button-root,
+.mud-snackbar .mud-icon-button {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.mud-button-root,
+.mud-icon-button,
+.mud-switch,
+.mud-slider {
+    pointer-events: auto !important;
+}
+.mud-switch {
+    flex-shrink: 0;
+    width: 125px;
+    margin: 0;
+}
+
+.mud-slider {
+    width: 100%;
+}
+
+.settings-panel {
+    z-index: 300;
+}
+
+.settings-panel {
+    margin-left: 4px;
+    transition: transform 0.2s ease;
+}
+
+.settings-panel .mud-icon-button {
+    margin-left: 0px;
+    transition: transform 0.3s ease;
+}
+
+.settings-panel {
+    width: 333px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(15px);
+    transition: all 0.5s ease;
+    overflow-y: auto;
+    max-height: 100vh;
+    pointer-events: auto !important;
+}
+
+.settings-panel::-webkit-scrollbar {
+    width: 4px;
+}
+
+.settings-panel::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+}
+
+.settings-panel {
+    background: rgba(0, 0, 0, 0.4);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+.slider-wrapper {
+    flex-grow: 1;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(10px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.slider-wrapper.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+
+.slider-wrapper .mud-slider {
+    margin: 0;
+}

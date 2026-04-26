@@ -5,6 +5,9 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
 	<ItemGroup>
+	  <Content Remove="wwwroot\css\bird - Копировать.css" />
+	</ItemGroup>
+	<ItemGroup>
 		<ProjectReference Include="..\..\FishFocus.Shared\FishFocus.Shared.csproj" />
 		<ProjectReference Include="..\FishFocus.Client\FishFocus.Client.csproj" />
 		<PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />

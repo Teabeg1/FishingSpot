@@ -23,4 +23,5 @@ public class AuthApiService
         var response = await _http.PostAsJsonAsync("api/auth/register", request);
         return await response.Content.ReadFromJsonAsync<AuthResponse>();
     }
+
 }

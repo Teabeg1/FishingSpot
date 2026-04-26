@@ -10,13 +10,17 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
     public DbSet<User> Users { get; set; }
 
+    public DbSet<Fish> Fishes { get; set; }
+    public DbSet<FishCatchResult> CaughtFishes { get; set; }
+    public DbSet<DiaryEntry> DiaryEntries { get; set; }
+
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<User>(entity =>
         {
-            // Уникальность email и username на уровне БД
             entity.HasIndex(u => u.Email).IsUnique();
             entity.HasIndex(u => u.Username).IsUnique();
 
