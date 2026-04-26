@@ -1091,7 +1091,6 @@
                     Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
                     await Http.PostAsJsonAsync("api/profile/save-catch", response);
-                    await Http.PostAsJsonAsync("api/profile/points", response.TotalPoints);
                 }
 
                 var parameters = new DialogParameters { ["CatchResult"] = response, ["IsNight"] = isNightMode };

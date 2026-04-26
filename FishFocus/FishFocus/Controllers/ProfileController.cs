@@ -70,7 +70,12 @@ public class ProfileController : ControllerBase
         _db.CaughtFishes.Add(catchResult);
         await _db.SaveChangesAsync();
 
-        return Ok();
+        var user = await _db.Users.FindAsync(userId.Value);
+        if (user is null) return NotFound();
+        user.TotalPoints += catchResult.TotalPoints;
+
+        await _db.SaveChangesAsync();
+        return Ok(new { user.TotalPoints });
     }
 
     [HttpPost("save-diary")]
