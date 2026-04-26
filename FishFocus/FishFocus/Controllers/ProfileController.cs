@@ -138,16 +138,22 @@ public class ProfileController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("points")]
-    public async Task<IActionResult> AddPoints([FromBody] int pointsToAdd)
+    [HttpGet("leaderboard")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetLeaderboard()
     {
-        var userId = GetUserId();
-        var user = await _db.Users.FindAsync(userId);
-        if (user is null) return NotFound();
+        var leaders = await _db.Users
+            .Where(u => u.TotalPoints > 0)
+            .OrderByDescending(u => u.TotalPoints)
+            .Take(50)
+            .Select(u => new LeaderboardEntryDto
+    {
+                Username = u.Username,
+                TotalPoints = u.TotalPoints
+            })
+            .ToListAsync();
 
-        user.TotalPoints += pointsToAdd;
-        await _db.SaveChangesAsync();
-        return Ok(new { user.TotalPoints });
+        return Ok(leaders);
     }
 
     private int? GetUserId()
